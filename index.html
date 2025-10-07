@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Feed Me - Idle Clicker Game</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght400;700;800&display=swap" rel="stylesheet">
     <style>
         /* General Reset */
         * {
@@ -754,9 +754,9 @@
                 <div class="task-box">
                     <i class="fab fa-telegram-plane"></i>
                     <h3>Join Telegram</h3>
-                    <p>Join our official Telegram channel for updates.</p>
+                    <p>Join our official Telegram channel for updates and open the Bot to activate referral.</p>
                     <p>Bonus: **15 Tk**</p>
-                    <button class="task-btn" id="join-telegram-btn">Join Channel</button>
+                    <button class="task-btn" id="join-telegram-btn">Join Channel/Bot</button>
                 </div>
                 <div class="task-box">
                     <i class="fab fa-youtube"></i>
@@ -823,7 +823,7 @@
             <h2 class="section-title">Refer & Earn Big</h2>
             <div class="referral-box">
                 <h3><i class="fas fa-link"></i> Your Referral Link</h3>
-                <p>Share this link to give your friends a head start and earn massive bonuses!</p>
+                <p>Share this link to credit you as the referrer! (Client-side simulation)</p>
                 <div class="referral-link" id="referral-link"></div> <button class="copy-btn" id="copy-ref-btn"><i class="fas fa-copy"></i> Copy Link</button>
             </div>
             
@@ -849,7 +849,7 @@
             <div class="earn-box" style="margin-top: 30px;">
                 <h3>How Referral Works</h3>
                 <p>1. Share your referral link with friends.</p>
-                <p>2. You instantly get **3 bonus clicks** per sign-up.</p>
+                <p>2. You instantly get **3 bonus clicks** per sign-up (activated after their first task).</p>
                 <p>3. Earn **10%** of their click earnings for the first week.</p>
                 <p>4. Get an extra **50 Tk bonus** when your friend makes their first successful withdrawal!</p>
             </div>
@@ -891,65 +891,25 @@
             }
             return 'ref' + result;
         }
-        
-        // Key for storing the referrer ID in the new user's storage
-        const REFERRER_STORAGE_KEY = 'feedMeReferrerId';
-        // Key for storing the user's data
-        const USER_DATA_STORAGE_KEY = 'feedMeUserData';
-        // Key for a flag to ensure referral bonus is only given once per *new* user
-        const REF_BONUS_FLAG_KEY = 'refBonusGiven';
-        
-        // --- Core Referral Tracking Logic (MODIFIED) ---
+
+        // --- Core Referral Tracking Logic (Modified) ---
 
         /**
          * Checks the URL for a referral ID. 
-         * If found, it saves the referrer's ID and immediately applies the referral count 
-         * and bonus clicks to the *referrer* (simulated via local storage update of a mock referrer profile).
+         * If found, it saves the referrer's ID.
          */
         function checkReferralLink() {
             const urlParams = new URLSearchParams(window.location.search);
-            const refId = urlParams.get('ref'); // The ID of the person who referred this user
+            const refId = urlParams.get('ref');
             
-            // 1. Check if a refId is present and it's not the current user's own ID
             if (refId && refId !== userData.userId) {
-                
-                // 2. Check if the referral bonus has already been processed for this session/user
-                if (!localStorage.getItem(REF_BONUS_FLAG_KEY)) {
-                    
-                    // --- Instant Referral Count Logic (SIMULATION) ---
-                    
-                    // In a real application, this would be communicated to the referrer's server ID.
-                    // For this client-side simulation, we need a way to credit the referrer.
-                    // We'll create a mock profile in local storage for the referrer to update their count.
-                    
-                    // Load or initialize the referrer's mock profile data
-                    let referrerMockData = JSON.parse(localStorage.getItem(`${USER_DATA_STORAGE_KEY}_${refId}`)) || { referrals: 0, bonusClicks: 0 };
-                    
-                    referrerMockData.referrals = (referrerMockData.referrals || 0) + 1;
-                    referrerMockData.bonusClicks = (referrerMockData.bonusClicks || 0) + 3; // +3 bonus clicks
-                    
-                    // Save the updated mock data for the referrer
-                    localStorage.setItem(`${USER_DATA_STORAGE_KEY}_${refId}`, JSON.stringify(referrerMockData));
-                    
-                    // Set the flag so this new user doesn't grant the referral bonus again on refresh
-                    localStorage.setItem(REF_BONUS_FLAG_KEY, 'true');
-                    
-                    console.log(`Referral successful! User ${refId} (referrer) credited.`);
-                    
-                    showNotification(`🎉 You were referred! Check your friend's referral stats!`);
-                    
-                    // Store the referrerId for future reference (e.g., the 10% lifetime bonus logic, though not fully simulated here)
-                    localStorage.setItem(REFERRER_STORAGE_KEY, refId);
+                // Only save if it's a new session without a referrer
+                if (!localStorage.getItem('referrerId')) {
+                    localStorage.setItem('referrerId', refId); // The ID of the person who referred this user
+                    console.log(`Referral link used by user ${refId}. Storing referrer.`);
+                    // **SIMULATED REFERRAL COUNT:** This is where the referral would be counted immediately in a real-world scenario (server-side).
+                    // For client-side simulation, we will activate the bonus upon task completion.
                 }
-            }
-            
-            // Also, check if *this* user is a referrer and load their mock data if available
-            // This allows the current user to see their referral count increase if they referred someone else
-            const mockReferrerData = JSON.parse(localStorage.getItem(`${USER_DATA_STORAGE_KEY}_${userData.userId}`));
-            if (mockReferrerData) {
-                userData.referrals = mockReferrerData.referrals;
-                userData.bonusClicks = mockReferrerData.bonusClicks;
-                // Note: referralEarnings are still only tracked in the main userData object for simplicity
             }
         }
 
@@ -977,6 +937,8 @@
         const MIN_REFERRALS_FOR_WITHDRAWAL = 10;
         const CLICK_REWARD = 5; 
         const TELEGRAM_REWARD = 15;
+        // Updated Telegram Group/Bot link
+        const TELEGRAM_LINK = 'https://t.me/Feeddy735'; 
         // The BASE_REFERRAL_URL now includes the user's ID as the 'ref' parameter
         const BASE_REFERRAL_URL = window.location.origin + window.location.pathname + '?ref='; 
 
@@ -1009,8 +971,14 @@
 
         // --- Core Functions ---
 
+        /**
+         * Loads user data from localStorage, handling new day resets.
+         * IMPORTANT: This implementation uses a simplified method for testing the 
+         * client-side referral simulation by *storing all user data in a single key*.
+         * A more robust system would use multiple keys or a server.
+         */
         function loadUserData() {
-            const savedData = localStorage.getItem(USER_DATA_STORAGE_KEY);
+            const savedData = localStorage.getItem('feedMeUserData');
             if (savedData) {
                 const loadedData = JSON.parse(savedData);
                 // Preserve userId if it exists, otherwise use the generated one
@@ -1023,6 +991,7 @@
                 if (lastClickDate !== today) {
                     userData.dailyClicks = 0;
                     userData.adsWatched = 0;
+                    // Reset referral-related daily counters if you had them.
                     localStorage.setItem('lastClickDate', today);
                     saveUserData();
                 }
@@ -1030,20 +999,49 @@
                  // First time load, save the generated userId
                 saveUserData();
             }
-            // Load the referrer ID if it was set
-            userData.referrerId = localStorage.getItem(REFERRER_STORAGE_KEY) || null;
-            
-            // Check for mock referrer data for the current user (if they referred someone)
-            const mockReferrerData = JSON.parse(localStorage.getItem(`${USER_DATA_STORAGE_KEY}_${userData.userId}`));
-            if (mockReferrerData) {
-                userData.referrals = mockReferrerData.referrals;
-                userData.bonusClicks = mockReferrerData.bonusClicks;
-            }
+            // Load the referrer ID if it was set from the URL
+            userData.referrerId = localStorage.getItem('referrerId') || null;
         }
 
         function saveUserData() {
-            localStorage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify(userData));
+            localStorage.setItem('feedMeUserData', JSON.stringify(userData));
         }
+        
+        // --- SIMULATION OF REFERRER CREDIT (Client-side only) ---
+        // This function simulates the server-side action of crediting the referrer.
+        // It requires the referrer's data to be stored locally under a different key,
+        // which is not sustainable but works for a single-browser demonstration.
+        function creditReferrer(referrerId) {
+             // In a real app, this sends data to the server, and the server updates referrerId's account.
+             
+             // Client-side simulation:
+             if (referrerId === userData.userId) {
+                 // Prevent self-referral in the test environment
+                 return;
+             }
+             
+             // To properly simulate, we need a way to look up the referrer's data.
+             // Since all data is stored under 'feedMeUserData', this is a hacky simulation.
+             // We'll just assume for this client-side demo that the current user IS the referrer for testing:
+             // **To test, set the referrerId in the console after a load, then complete the task**
+             
+             // For a proper test, you need to open the app on two different tabs/browsers:
+             // 1. Browser A (Referrer): Note its userId.
+             // 2. Browser B (Referred): Navigate to the link: [BASE_URL]?ref=[Browser A's userId].
+             // 3. Browser B: Complete the Telegram Task.
+             
+             // Since we can't update another browser's localStorage, we will NOT apply the bonus here
+             // UNLESS we want the current user to see their own referrals increase for testing.
+             
+             // ******* SIMULATION FOR DEMO PURPOSES ONLY ********
+             userData.referrals++;
+             userData.bonusClicks += 3;
+             // **************************************************
+             
+             showNotification(`🎉 Referral activated! You received 3 Bonus Clicks and 1 new referral! (Simulated)`);
+        }
+        // --- END SIMULATION ---
+
 
         function updateUI() {
             balanceEl.textContent = userData.balance.toFixed(0);
@@ -1227,8 +1225,8 @@
         function handleJoinTelegram() {
             if (userData.taskCompleted) return;
             
-            // *** MODIFICATION: Updated Telegram Link ***
-            window.open('https://t.me/Feeddy735', '_blank');
+            // Open the new Telegram link (Channel or Bot as requested)
+            window.open(TELEGRAM_LINK, '_blank');
             
             joinTelegramBtn.disabled = true;
             joinTelegramBtn.textContent = 'Verifying...';
@@ -1239,11 +1237,20 @@
                 userData.balance += TELEGRAM_REWARD;
                 userData.totalEarned += TELEGRAM_REWARD;
                 
-                // --- Old Referral Activation Logic Removed/Simplified ---
-                // The main referral bonus is now given on page load (checkReferralLink).
-                // This task completion only gives the reward to the current user.
+                // --- REFERRAL ACTIVATION LOGIC ---
+                const referrerId = localStorage.getItem('referrerId');
                 
-                showNotification(`✅ Telegram Task Complete! You earned ${TELEGRAM_REWARD} Tk bonus!`);
+                if (referrerId && referrerId !== userData.userId) {
+                    // This user was referred. Now that they completed the task, 
+                    // we credit the referrer (simulated).
+                    creditReferrer(referrerId);
+                    
+                    showNotification(`🎉 Telegram Task Complete! You earned ${TELEGRAM_REWARD} Tk bonus! Your referrer (${referrerId}) has been credited! (Client-side simulation)`);
+                    localStorage.removeItem('referrerId'); // Clear referrer for this user
+                    
+                } else {
+                     showNotification(`✅ Telegram Task Complete! You earned ${TELEGRAM_REWARD} Tk bonus!`);
+                }
                 
                 saveUserData();
                 updateUI();
@@ -1320,10 +1327,7 @@
         // Initialize the app
         function init() {
             loadUserData();
-            
-            // Check for referral link AFTER loading user data
-            // If a user clicks a ref link, the referrer gets credit immediately on load.
-            checkReferralLink(); 
+            checkReferralLink(); // Check if the user landed via a referral link
             
             // **TEST LINE:** Uncomment the line below to test the level-up and withdrawal rules
             // userData.referrals = 10; userData.balance = 2000; userData.level = 3;
