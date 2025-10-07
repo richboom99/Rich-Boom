@@ -370,39 +370,11 @@
 
         /* --- Earn & Task Pages --- */
 
-        .earn-options, .task-options, .referral-stats {
+        .earn-options, .task-options {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 25px;
         }
-
-        .referral-stats {
-            margin-top: 25px;
-        }
-        
-        .stat-box {
-            background: rgba(0, 0, 0, 0.4);
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            border: 2px solid #FF5733;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6);
-        }
-        
-        .stat-box h4 {
-            margin-bottom: 8px;
-            font-size: 18px;
-            color: #ccc;
-            font-weight: 700;
-        }
-        
-        .stat-box p {
-            font-size: 32px;
-            font-weight: 800;
-            color: #33FF33; /* Make stats pop more */
-            font-family: 'Bungee', cursive;
-        }
-
 
         .earn-box, .task-box {
             background: rgba(255, 255, 255, 0.1);
@@ -441,7 +413,7 @@
             filter: drop-shadow(0 0 5px rgba(255, 87, 34, 0.7));
         }
 
-        .earn-btn, .task-btn, .copy-btn {
+        .earn-btn, .task-btn {
             background: linear-gradient(to right, #4CAF50, #33FF33); /* Neon Green */
             color: #1C2B5B;
             border: none;
@@ -455,23 +427,11 @@
             text-transform: uppercase;
         }
 
-        .copy-btn {
-            background: linear-gradient(to right, #2196F3, #4FC3F7);
-            color: white;
-            box-shadow: 0 5px 0 #0D47A1, 0 10px 20px rgba(33, 150, 243, 0.7);
-            margin-top: 15px;
-        }
-        
-        .earn-btn:active, .task-btn:active, .copy-btn:active {
+        .earn-btn:active, .task-btn:active {
             box-shadow: 0 2px 0 #2E7D32, 0 5px 10px rgba(76, 175, 80, 0.5);
             transform: translateY(3px);
         }
         
-        .copy-btn:active {
-            box-shadow: 0 2px 0 #0D47A1, 0 5px 10px rgba(33, 150, 243, 0.7);
-            transform: translateY(3px);
-        }
-
         .earn-btn:disabled, .task-btn:disabled {
             background: #A5D6A7;
             cursor: not-allowed;
@@ -632,33 +592,6 @@
             transform: translateY(-3px);
         }
         
-        /* Referral Styles (Minor refinement) */
-        .referral-box {
-            background: rgba(0, 0, 0, 0.5);
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            border: 2px solid #FFC300;
-        }
-        
-        .referral-box h3 {
-             color: #FFC300;
-             margin-bottom: 10px;
-        }
-        
-        .referral-link {
-            background: rgba(0, 0, 0, 0.5);
-            padding: 15px;
-            border-radius: 10px;
-            word-break: break-all;
-            font-family: monospace;
-            font-size: 16px;
-            color: #33FF33;
-            border: 2px dashed #33FF33;
-            box-shadow: inset 0 0 10px rgba(51, 255, 51, 0.5);
-            display: block; /* Make it a block element to hold its size */
-        }
-        
         /* Media Queries for Responsiveness */
         @media (max-width: 768px) {
             header {
@@ -678,7 +611,7 @@
             .level-box {
                 margin: 8px 0;
             }
-            .earn-options, .task-options, .referral-stats {
+            .earn-options, .task-options {
                 grid-template-columns: 1fr;
             }
             .feed-btn {
@@ -754,7 +687,7 @@
                 <div class="task-box">
                     <i class="fab fa-telegram-plane"></i>
                     <h3>Join Telegram</h3>
-                    <p>Join our official Telegram channel for updates and open the Bot to activate referral.</p>
+                    <p>Join our official Telegram channel for updates and open the Bot to activate.</p>
                     <p>Bonus: **15 Tk**</p>
                     <button class="task-btn" id="join-telegram-btn">Join Channel/Bot</button>
                 </div>
@@ -788,9 +721,6 @@
                 <p>Current Rate: 1 USD = 124 Tk</p>
                 <p>Minimum Withdrawal: 1500 Tk</p>
             </div>
-            <div class="withdraw-alert">
-                Minimum 10 active referrals are required for withdrawal!
-            </div>
             <div class="withdraw-form">
                 <div class="form-group">
                     <label for="withdraw-method"><i class="fas fa-credit-card"></i> Withdrawal Method</label>
@@ -818,42 +748,6 @@
                 <button class="withdraw-btn" id="withdraw-submit-btn">Submit Withdrawal Request</button>
             </div>
         </div>
-
-        <div id="referral" class="page">
-            <h2 class="section-title">Refer & Earn Big</h2>
-            <div class="referral-box">
-                <h3><i class="fas fa-link"></i> Your Referral Link</h3>
-                <p>Share this link to credit you as the referrer! (Client-side simulation)</p>
-                <div class="referral-link" id="referral-link"></div> <button class="copy-btn" id="copy-ref-btn"><i class="fas fa-copy"></i> Copy Link</button>
-            </div>
-            
-            <div class="referral-stats">
-                <div class="stat-box">
-                    <h4>Total Referrals</h4>
-                    <p id="total-referrals">0</p>
-                </div>
-                <div class="stat-box">
-                    <h4>Bonus Clicks</h4>
-                    <p id="bonus-clicks">0</p>
-                </div>
-                <div class="stat-box">
-                    <h4>Referral Earnings</h4>
-                    <p id="referral-earnings">0 Tk</p>
-                </div>
-                <div class="stat-box">
-                    <h4>Lifetime Bonus</h4>
-                    <p>10%</p>
-                </div>
-            </div>
-            
-            <div class="earn-box" style="margin-top: 30px;">
-                <h3>How Referral Works</h3>
-                <p>1. Share your referral link with friends.</p>
-                <p>2. You instantly get **3 bonus clicks** per sign-up (activated after their first task).</p>
-                <p>3. Earn **10%** of their click earnings for the first week.</p>
-                <p>4. Get an extra **50 Tk bonus** when your friend makes their first successful withdrawal!</p>
-            </div>
-        </div>
     </div>
 
     <div class="bottom-nav">
@@ -868,10 +762,6 @@
         <a href="#" class="nav-btn" data-page="tasks">
             <i class="fas fa-clipboard-list"></i>
             <span>Tasks</span>
-        </a>
-        <a href="#" class="nav-btn" data-page="referral">
-            <i class="fas fa-users"></i>
-            <span>Referral</span>
         </a>
         <a href="#" class="nav-btn" data-page="withdraw">
             <i class="fas fa-wallet"></i>
@@ -889,33 +779,12 @@
             for (let i = 0; i < length; i++) {
                 result += chars.charAt(Math.floor(Math.random() * chars.length));
             }
-            return 'ref' + result;
+            return 'user' + result; // Changed prefix as 'ref' is no longer relevant
         }
 
-        // --- Core Referral Tracking Logic (Modified) ---
-
-        /**
-         * Checks the URL for a referral ID. 
-         * If found, it saves the referrer's ID.
-         */
-        function checkReferralLink() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const refId = urlParams.get('ref');
-            
-            if (refId && refId !== userData.userId) {
-                // Only save if it's a new session without a referrer
-                if (!localStorage.getItem('referrerId')) {
-                    localStorage.setItem('referrerId', refId); // The ID of the person who referred this user
-                    console.log(`Referral link used by user ${refId}. Storing referrer.`);
-                    // **SIMULATED REFERRAL COUNT:** This is where the referral would be counted immediately in a real-world scenario (server-side).
-                    // For client-side simulation, we will activate the bonus upon task completion.
-                }
-            }
-        }
-
-        // User data structure
+        // User data structure (Referral-related fields removed)
         let userData = {
-            userId: generateUserId(), // New: Unique ID for referral tracking
+            userId: generateUserId(), 
             balance: 0,
             dailyClicks: 0,
             totalClicks: 0,
@@ -923,24 +792,17 @@
             adsWatched: 0,
             taskCompleted: false, // For Telegram task
             totalEarned: 0,
-            referrals: 0, // This is the count of people *this* user has referred
-            activeReferrals: 0, // Placeholder, usually server-side
-            referralEarnings: 0,
-            bonusClicks: 0,
-            referrerId: null // Stores the ID of the person who referred this user
+            bonusClicks: 0, // Kept to use up existing bonus clicks if any were earned
         };
 
         // CONSTANTS
         const DAILY_AD_LIMIT = 30;
         const AD_REWARD = 5;
         const MIN_WITHDRAWAL = 1500;
-        const MIN_REFERRALS_FOR_WITHDRAWAL = 10;
         const CLICK_REWARD = 5; 
         const TELEGRAM_REWARD = 15;
         // Updated Telegram Group/Bot link
         const TELEGRAM_LINK = 'https://t.me/Feeddy735'; 
-        // The BASE_REFERRAL_URL now includes the user's ID as the 'ref' parameter
-        const BASE_REFERRAL_URL = window.location.origin + window.location.pathname + '?ref='; 
 
         // DOM elements
         const balanceEl = document.getElementById('balance');
@@ -963,19 +825,12 @@
         const dollarAmountEl = document.getElementById('dollar-amount');
         const withdrawSubmitBtn = document.getElementById('withdraw-submit-btn');
         const notificationEl = document.getElementById('notification');
-        const referralLinkEl = document.getElementById('referral-link');
-        const copyRefBtn = document.getElementById('copy-ref-btn');
-        const totalReferralsEl = document.getElementById('total-referrals');
-        const referralEarningsEl = document.getElementById('referral-earnings');
-        const bonusClicksEl = document.getElementById('bonus-clicks');
+        const bonusClicksEl = document.getElementById('bonus-clicks'); // Kept for display
 
         // --- Core Functions ---
 
         /**
          * Loads user data from localStorage, handling new day resets.
-         * IMPORTANT: This implementation uses a simplified method for testing the 
-         * client-side referral simulation by *storing all user data in a single key*.
-         * A more robust system would use multiple keys or a server.
          */
         function loadUserData() {
             const savedData = localStorage.getItem('feedMeUserData');
@@ -983,15 +838,24 @@
                 const loadedData = JSON.parse(savedData);
                 // Preserve userId if it exists, otherwise use the generated one
                 const newUserId = loadedData.userId || generateUserId();
-                userData = { ...userData, ...loadedData, userId: newUserId };
                 
+                // Manually load only allowed keys to remove old referral data
+                userData.userId = newUserId;
+                userData.balance = loadedData.balance || 0;
+                userData.dailyClicks = loadedData.dailyClicks || 0;
+                userData.totalClicks = loadedData.totalClicks || 0;
+                userData.level = loadedData.level || 1;
+                userData.adsWatched = loadedData.adsWatched || 0;
+                userData.taskCompleted = loadedData.taskCompleted || false;
+                userData.totalEarned = loadedData.totalEarned || 0;
+                userData.bonusClicks = loadedData.bonusClicks || 0;
+
                 const lastClickDate = localStorage.getItem('lastClickDate');
                 const today = new Date().toDateString();
                 
                 if (lastClickDate !== today) {
                     userData.dailyClicks = 0;
                     userData.adsWatched = 0;
-                    // Reset referral-related daily counters if you had them.
                     localStorage.setItem('lastClickDate', today);
                     saveUserData();
                 }
@@ -999,56 +863,17 @@
                  // First time load, save the generated userId
                 saveUserData();
             }
-            // Load the referrer ID if it was set from the URL
-            userData.referrerId = localStorage.getItem('referrerId') || null;
         }
 
         function saveUserData() {
             localStorage.setItem('feedMeUserData', JSON.stringify(userData));
         }
-        
-        // --- SIMULATION OF REFERRER CREDIT (Client-side only) ---
-        // This function simulates the server-side action of crediting the referrer.
-        // It requires the referrer's data to be stored locally under a different key,
-        // which is not sustainable but works for a single-browser demonstration.
-        function creditReferrer(referrerId) {
-             // In a real app, this sends data to the server, and the server updates referrerId's account.
-             
-             // Client-side simulation:
-             if (referrerId === userData.userId) {
-                 // Prevent self-referral in the test environment
-                 return;
-             }
-             
-             // To properly simulate, we need a way to look up the referrer's data.
-             // Since all data is stored under 'feedMeUserData', this is a hacky simulation.
-             // We'll just assume for this client-side demo that the current user IS the referrer for testing:
-             // **To test, set the referrerId in the console after a load, then complete the task**
-             
-             // For a proper test, you need to open the app on two different tabs/browsers:
-             // 1. Browser A (Referrer): Note its userId.
-             // 2. Browser B (Referred): Navigate to the link: [BASE_URL]?ref=[Browser A's userId].
-             // 3. Browser B: Complete the Telegram Task.
-             
-             // Since we can't update another browser's localStorage, we will NOT apply the bonus here
-             // UNLESS we want the current user to see their own referrals increase for testing.
-             
-             // ******* SIMULATION FOR DEMO PURPOSES ONLY ********
-             userData.referrals++;
-             userData.bonusClicks += 3;
-             // **************************************************
-             
-             showNotification(`🎉 Referral activated! You received 3 Bonus Clicks and 1 new referral! (Simulated)`);
-        }
-        // --- END SIMULATION ---
-
 
         function updateUI() {
             balanceEl.textContent = userData.balance.toFixed(0);
             clicksInfoEl.textContent = `Today's Clicks: ${userData.dailyClicks}/3 (+${userData.bonusClicks} Bonus)`;
             currentLevelEl.textContent = userData.level;
             totalEarnedEl.textContent = `${userData.totalEarned.toFixed(0)} Tk`;
-            adsCountEl.textContent = `Watched Today: ${userData.adsWatched}/${DAILY_AD_LIMIT}`;
             
             // Progress bar (Level up every 10 total clicks)
             const progressPercent = (userData.totalClicks % 10) * 10;
@@ -1066,17 +891,9 @@
                 joinTelegramBtn.textContent = 'Task Completed';
             }
             
-            // Withdraw button state
-            const canWithdraw = userData.balance >= MIN_WITHDRAWAL && userData.referrals >= MIN_REFERRALS_FOR_WITHDRAWAL;
+            // Withdraw button state (Removed referral requirement)
+            const canWithdraw = userData.balance >= MIN_WITHDRAWAL;
             withdrawSubmitBtn.disabled = !canWithdraw;
-
-            // Referral stats
-            totalReferralsEl.textContent = userData.referrals;
-            referralEarningsEl.textContent = `${userData.referralEarnings.toFixed(0)} Tk`;
-            bonusClicksEl.textContent = userData.bonusClicks;
-            
-            // Dynamic Referral Link
-            referralLinkEl.textContent = `${BASE_REFERRAL_URL}${userData.userId}`;
             
             // Update Feed Button Text with current reward
             feedBtn.textContent = `Feed Me! (${CLICK_REWARD} Tk)`;
@@ -1140,9 +957,6 @@
             
             // Withdraw submit
             withdrawSubmitBtn.addEventListener('click', handleWithdrawSubmit);
-            
-            // Copy referral link
-            copyRefBtn.addEventListener('click', handleCopyReferralLink);
         }
 
         function handleFeedClick() {
@@ -1237,20 +1051,7 @@
                 userData.balance += TELEGRAM_REWARD;
                 userData.totalEarned += TELEGRAM_REWARD;
                 
-                // --- REFERRAL ACTIVATION LOGIC ---
-                const referrerId = localStorage.getItem('referrerId');
-                
-                if (referrerId && referrerId !== userData.userId) {
-                    // This user was referred. Now that they completed the task, 
-                    // we credit the referrer (simulated).
-                    creditReferrer(referrerId);
-                    
-                    showNotification(`🎉 Telegram Task Complete! You earned ${TELEGRAM_REWARD} Tk bonus! Your referrer (${referrerId}) has been credited! (Client-side simulation)`);
-                    localStorage.removeItem('referrerId'); // Clear referrer for this user
-                    
-                } else {
-                     showNotification(`✅ Telegram Task Complete! You earned ${TELEGRAM_REWARD} Tk bonus!`);
-                }
+                showNotification(`✅ Telegram Task Complete! You earned ${TELEGRAM_REWARD} Tk bonus!`);
                 
                 saveUserData();
                 updateUI();
@@ -1280,18 +1081,13 @@
             
             const isBalanceSufficient = amount <= userData.balance;
             const isAboveMinimum = amount >= MIN_WITHDRAWAL;
-            const hasEnoughReferrals = userData.referrals >= MIN_REFERRALS_FOR_WITHDRAWAL;
             
-            withdrawSubmitBtn.disabled = !(isBalanceSufficient && isAboveMinimum && hasEnoughReferrals);
+            // Simplified withdrawal check (removed referral check)
+            withdrawSubmitBtn.disabled = !(isBalanceSufficient && isAboveMinimum);
         }
 
         function handleWithdrawSubmit() {
             const amount = parseFloat(withdrawAmountEl.value) || 0;
-            
-            if (userData.referrals < MIN_REFERRALS_FOR_WITHDRAWAL) {
-                showNotification(`⛔ Withdrawal failed! You need ${MIN_REFERRALS_FOR_WITHDRAWAL} referrals to withdraw.`, true);
-                return;
-            }
             
             if (amount < MIN_WITHDRAWAL) {
                 showNotification(`⛔ Minimum withdrawal is ${MIN_WITHDRAWAL} Tk!`, true);
@@ -1314,24 +1110,10 @@
             withdrawSubmitBtn.disabled = true;
         }
 
-        function handleCopyReferralLink() {
-            const link = referralLinkEl.textContent;
-            navigator.clipboard.writeText(link).then(() => {
-                showNotification('🔗 Referral link copied to clipboard!');
-            }).catch(err => {
-                console.error('Could not copy text: ', err);
-                showNotification('Could not copy link. Try manually.');
-            });
-        }
-
         // Initialize the app
         function init() {
             loadUserData();
-            checkReferralLink(); // Check if the user landed via a referral link
-            
-            // **TEST LINE:** Uncomment the line below to test the level-up and withdrawal rules
-            // userData.referrals = 10; userData.balance = 2000; userData.level = 3;
-            
+            // Removed checkReferralLink()
             updateUI();
             setupEventListeners();
             handleWithdrawMethodChange();
