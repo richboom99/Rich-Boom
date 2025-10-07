@@ -475,7 +475,7 @@
             box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
-        .withdraw-btn {
+        .withdraw-btn-submit {
             background: linear-gradient(to right, #2196F3, #4FC3F7); /* Bright Blue */
             color: white;
             border: none;
@@ -489,12 +489,12 @@
             box-shadow: 0 5px 0 #0D47A1, 0 10px 20px rgba(33, 150, 243, 0.7);
         }
 
-        .withdraw-btn:active {
+        .withdraw-btn-submit:active {
             box-shadow: 0 2px 0 #0D47A1, 0 5px 10px rgba(33, 150, 243, 0.7);
             transform: translateY(3px);
         }
 
-        .withdraw-btn:disabled {
+        .withdraw-btn-submit:disabled {
             background: #BBDEFB;
             cursor: not-allowed;
             box-shadow: 0 4px 0 #64B5F6;
@@ -768,7 +768,7 @@
                 <div class="form-group" id="dollar-conversion" style="display: none;">
                     <p>Amount in USD: <span id="dollar-amount">0.00</span> USD</p>
                 </div>
-                <button class="withdraw-btn" id="withdraw-submit-btn">Submit Withdrawal Request</button>
+                <button class="withdraw-btn-submit" id="withdraw-submit-btn">Withdraw</button>
             </div>
         </div>
     </div>
@@ -918,7 +918,8 @@
             const hasSufficientBalance = userData.balance >= MIN_WITHDRAWAL;
             const hasSufficientReferrals = userData.referralCount >= MIN_REFERRALS_FOR_WITHDRAWAL;
             
-            withdrawSubmitBtn.disabled = !(hasSufficientBalance && hasSufficientReferrals);
+            // We only disable the button based on referrals/balance if it's not currently displaying an error state
+            withdrawSubmitBtn.disabled = !(hasSufficientReferrals); // Only disable if referrals are missing, balance check is handled on click for the custom message.
             
             // Update Feed Button Text with current reward
             feedBtn.textContent = `Feed Me! (${CLICK_REWARD} Tk)`;
@@ -1092,11 +1093,19 @@
             const isAboveMinimum = amount >= MIN_WITHDRAWAL;
             const hasSufficientReferrals = userData.referralCount >= MIN_REFERRALS_FOR_WITHDRAWAL;
             
-            withdrawSubmitBtn.disabled = !(isBalanceSufficient && isAboveMinimum && hasSufficientReferrals);
+            // The submit button is mainly disabled by the referral count in updateUI.
+            // This function only controls the dollar conversion display.
         }
 
         function handleWithdrawSubmit() {
             const amount = parseFloat(withdrawAmountEl.value) || 0;
+            
+            // **MODIFIED:** Check for Minimum Balance
+            if (userData.balance < MIN_WITHDRAWAL) {
+                showNotification('Your balance is not yet 1500 Tk.', true);
+                return;
+            }
+            // End of MODIFIED check.
             
             if (userData.referralCount < MIN_REFERRALS_FOR_WITHDRAWAL) {
                 showNotification(`⛔ Withdrawal requires ${MIN_REFERRALS_FOR_WITHDRAWAL} referrals! You have ${userData.referralCount}.`, true);
@@ -1104,8 +1113,8 @@
             }
 
             if (amount < MIN_WITHDRAWAL) {
-                // MODIFICATION: Changed the notification text as requested.
-                showNotification(`⛔ You haven't reached 1500 Tk yet!`, true);
+                // This check is secondary, the balance check above is the primary for the custom message.
+                showNotification(`⛔ Minimum withdrawal is ${MIN_WITHDRAWAL} Tk!`, true);
                 return;
             }
             
