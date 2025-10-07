@@ -370,11 +370,39 @@
 
         /* --- Earn & Task Pages --- */
 
-        .earn-options, .task-options {
+        .earn-options, .task-options, .referral-stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 25px;
         }
+
+        .referral-stats {
+            margin-top: 25px;
+        }
+        
+        .stat-box {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            border: 2px solid #FF5733;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6);
+        }
+        
+        .stat-box h4 {
+            margin-bottom: 8px;
+            font-size: 18px;
+            color: #ccc;
+            font-weight: 700;
+        }
+        
+        .stat-box p {
+            font-size: 32px;
+            font-weight: 800;
+            color: #33FF33; /* Make stats pop more */
+            font-family: 'Bungee', cursive;
+        }
+
 
         .earn-box, .task-box {
             background: rgba(255, 255, 255, 0.1);
@@ -413,7 +441,7 @@
             filter: drop-shadow(0 0 5px rgba(255, 87, 34, 0.7));
         }
 
-        .earn-btn, .task-btn {
+        .earn-btn, .task-btn, .copy-btn {
             background: linear-gradient(to right, #4CAF50, #33FF33); /* Neon Green */
             color: #1C2B5B;
             border: none;
@@ -426,9 +454,21 @@
             font-size: 16px;
             text-transform: uppercase;
         }
+
+        .copy-btn {
+            background: linear-gradient(to right, #2196F3, #4FC3F7);
+            color: white;
+            box-shadow: 0 5px 0 #0D47A1, 0 10px 20px rgba(33, 150, 243, 0.7);
+            margin-top: 15px;
+        }
         
-        .earn-btn:active, .task-btn:active {
+        .earn-btn:active, .task-btn:active, .copy-btn:active {
             box-shadow: 0 2px 0 #2E7D32, 0 5px 10px rgba(76, 175, 80, 0.5);
+            transform: translateY(3px);
+        }
+        
+        .copy-btn:active {
+            box-shadow: 0 2px 0 #0D47A1, 0 5px 10px rgba(33, 150, 243, 0.7);
             transform: translateY(3px);
         }
 
@@ -593,6 +633,19 @@
         }
         
         /* Referral Styles (Minor refinement) */
+        .referral-box {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            border: 2px solid #FFC300;
+        }
+        
+        .referral-box h3 {
+             color: #FFC300;
+             margin-bottom: 10px;
+        }
+        
         .referral-link {
             background: rgba(0, 0, 0, 0.5);
             padding: 15px;
@@ -603,10 +656,7 @@
             color: #33FF33;
             border: 2px dashed #33FF33;
             box-shadow: inset 0 0 10px rgba(51, 255, 51, 0.5);
-        }
-        
-        .stat-box p {
-            color: #33FF33; /* Make stats pop more */
+            display: block; /* Make it a block element to hold its size */
         }
         
         /* Media Queries for Responsiveness */
@@ -667,7 +717,7 @@
                     </div>
                     <div class="character-body"></div>
                 </div>
-                <button class="feed-btn" id="feed-btn">Feed Me! (30 Tk)</button>
+                <button class="feed-btn" id="feed-btn">Feed Me! (5 Tk)</button>
                 <div class="clicks-info" id="clicks-info">Today's Clicks: 0/3</div>
                 <div class="progress-bar">
                     <div class="progress" id="progress"></div>
@@ -850,11 +900,12 @@
 
         // CONSTANTS
         const DAILY_AD_LIMIT = 30;
-        const AD_REWARD = 5; // MODIFIED: Reduced from 10 Tk to 5 Tk
+        const AD_REWARD = 5;
         const MIN_WITHDRAWAL = 1500;
         const MIN_REFERRALS_FOR_WITHDRAWAL = 10;
-        const CLICK_REWARD = 30; // Kept the same
-        const TELEGRAM_REWARD = 15; // Kept the same
+        // MODIFIED: Click reward changed from 30 Tk to 5 Tk
+        const CLICK_REWARD = 5; 
+        const TELEGRAM_REWARD = 15;
 
 
         // DOM elements
@@ -939,6 +990,9 @@
             totalReferralsEl.textContent = userData.referrals;
             referralEarningsEl.textContent = `${userData.referralEarnings.toFixed(0)} Tk`;
             bonusClicksEl.textContent = userData.bonusClicks;
+            
+            // Update Feed Button Text with current reward
+            feedBtn.textContent = `Feed Me! (${CLICK_REWARD} Tk)`;
         }
 
         function showNotification(message, isError = false) {
@@ -1033,31 +1087,63 @@
         function handleWatchAd() {
             if (userData.adsWatched >= DAILY_AD_LIMIT) return;
             
-            showNotification('Watching ad... Please wait 3 seconds.');
+            // Use the Gigapub ad display function
+            if (window.showGiga) {
+                watchAdBtn.disabled = true;
+                showNotification('Loading ad...');
+
+                window.showGiga()
+                    .then(() => {
+                        // Success: Ad was shown and closed/finished
+                        userData.adsWatched++;
+                        userData.balance += AD_REWARD;
+                        userData.totalEarned += AD_REWARD;
+                        
+                        saveUserData();
+                        updateUI();
+                        
+                        showNotification(`💰 You earned ${AD_REWARD} Tk from the ad!`);
+                    })
+                    .catch(e => {
+                        // Error: Ad failed to load or was dismissed prematurely
+                        console.error("Ad failed or was dismissed:", e);
+                        showNotification('🚫 Ad failed to load. Try again.', true);
+                    })
+                    .finally(() => {
+                        // Re-enable the button regardless of success/failure
+                        watchAdBtn.disabled = userData.adsWatched >= DAILY_AD_LIMIT;
+                        updateUI();
+                    });
+            } else {
+                // Fallback for simulation if Gigapub script hasn't loaded
+                showNotification('Simulating ad... Please wait 3 seconds.');
             
-            watchAdBtn.disabled = true; // Disable button while "watching"
+                watchAdBtn.disabled = true; // Disable button while "watching"
             
-            setTimeout(() => {
-                userData.adsWatched++;
-                userData.balance += AD_REWARD;
-                userData.totalEarned += AD_REWARD;
-                
-                saveUserData();
-                updateUI();
-                
-                showNotification(`💰 You earned ${AD_REWARD} Tk from the ad!`);
-                watchAdBtn.disabled = userData.adsWatched >= DAILY_AD_LIMIT; // Re-enable if limit not reached
-            }, 3000); // Simulated 3-second ad duration
+                setTimeout(() => {
+                    userData.adsWatched++;
+                    userData.balance += AD_REWARD;
+                    userData.totalEarned += AD_REWARD;
+                    
+                    saveUserData();
+                    updateUI();
+                    
+                    showNotification(`💰 You earned ${AD_REWARD} Tk from the ad!`);
+                    watchAdBtn.disabled = userData.adsWatched >= DAILY_AD_LIMIT; // Re-enable if limit not reached
+                }, 3000); // Simulated 3-second ad duration
+            }
         }
 
         function handleJoinTelegram() {
             if (userData.taskCompleted) return;
             
+            // Open in a new tab
             window.open('http://t.me/rich_boom_bot', '_blank');
             
             joinTelegramBtn.disabled = true;
             joinTelegramBtn.textContent = 'Verifying...';
             
+            // Simulate verification time
             setTimeout(() => {
                 userData.taskCompleted = true;
                 userData.balance += TELEGRAM_REWARD;
@@ -1151,5 +1237,49 @@
 
         document.addEventListener('DOMContentLoaded', init);
     </script>
+    
+    <script data-project-id="3488">
+      !function(){
+        var s=document.currentScript,p=s.getAttribute('data-project-id')||'default';
+        var d=['https://ad.gigapub.tech','https://ru-ad.gigapub.tech'],i=0,t,sc;
+        
+        // Define fallback in case the main script fails
+        window.AdGigaFallback = () => {
+            return new Promise((resolve, reject) => {
+                // A simple placeholder promise for the fallback logic in handleWatchAd
+                setTimeout(() => {
+                    // Simulate success after 3 seconds
+                    resolve();
+                }, 3000);
+            });
+        };
+        
+        // Ensure window.showGiga is set even if the async script hasn't loaded yet
+        if (window.showGiga === undefined) {
+            window.showGiga = () => window.AdGigaFallback();
+        }
+
+        function l(){
+          sc=document.createElement('script');
+          sc.async=true;
+          sc.src=d[i]+'/script?id='+p;
+          
+          clearTimeout(t);
+          // 15 second timeout for ad script load
+          t=setTimeout(function(){
+            sc.onload=sc.onerror=null;
+            sc.src='';
+            if(++i<d.length)l();
+          },15000);
+          
+          sc.onload=function(){clearTimeout(t)};
+          sc.onerror=function(){clearTimeout(t);if(++i<d.length)l()};
+          
+          document.head.appendChild(sc);
+        }
+        l();
+      }();
+    </script>
+
 </body>
 </html>
