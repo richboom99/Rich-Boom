@@ -824,8 +824,7 @@
             <div class="referral-box">
                 <h3><i class="fas fa-link"></i> Your Referral Link</h3>
                 <p>Share this link to give your friends a head start and earn massive bonuses!</p>
-                <div class="referral-link" id="referral-link">https://t.me/rich_boom_bot?start=ref12345</div>
-                <button class="copy-btn" id="copy-ref-btn"><i class="fas fa-copy"></i> Copy Link</button>
+                <div class="referral-link" id="referral-link"></div> <button class="copy-btn" id="copy-ref-btn"><i class="fas fa-copy"></i> Copy Link</button>
             </div>
             
             <div class="referral-stats">
@@ -883,8 +882,19 @@
     <div class="notification" id="notification"></div>
 
     <script>
-        // User data
+        // Utility to generate a simple unique ID
+        function generateUserId(length = 8) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return 'ref' + result;
+        }
+
+        // User data structure
         let userData = {
+            userId: generateUserId(), // New: Unique ID for referral tracking
             balance: 0,
             dailyClicks: 0,
             totalClicks: 0,
@@ -903,10 +913,9 @@
         const AD_REWARD = 5;
         const MIN_WITHDRAWAL = 1500;
         const MIN_REFERRALS_FOR_WITHDRAWAL = 10;
-        // MODIFIED: Click reward changed from 30 Tk to 5 Tk
         const CLICK_REWARD = 5; 
         const TELEGRAM_REWARD = 15;
-
+        const BASE_REFERRAL_URL = 'https://t.me/rich_boom_bot?start='; // Telegram Bot URL
 
         // DOM elements
         const balanceEl = document.getElementById('balance');
@@ -941,7 +950,9 @@
             const savedData = localStorage.getItem('feedMeUserData');
             if (savedData) {
                 const loadedData = JSON.parse(savedData);
-                userData = { ...userData, ...loadedData };
+                // Preserve userId if it exists, otherwise use the generated one
+                const newUserId = loadedData.userId || generateUserId();
+                userData = { ...userData, ...loadedData, userId: newUserId };
                 
                 const lastClickDate = localStorage.getItem('lastClickDate');
                 const today = new Date().toDateString();
@@ -952,6 +963,9 @@
                     localStorage.setItem('lastClickDate', today);
                     saveUserData();
                 }
+            } else {
+                 // First time load, save the generated userId
+                saveUserData();
             }
         }
 
@@ -990,6 +1004,9 @@
             totalReferralsEl.textContent = userData.referrals;
             referralEarningsEl.textContent = `${userData.referralEarnings.toFixed(0)} Tk`;
             bonusClicksEl.textContent = userData.bonusClicks;
+            
+            // Dynamic Referral Link FIX
+            referralLinkEl.textContent = `${BASE_REFERRAL_URL}${userData.userId}`;
             
             // Update Feed Button Text with current reward
             feedBtn.textContent = `Feed Me! (${CLICK_REWARD} Tk)`;
@@ -1062,7 +1079,8 @@
             
             if (userData.dailyClicks >= 3 && userData.bonusClicks <= 0) return;
             
-            if (userData.dailyClicks >= 3 && userData.bonusClicks > 0) {
+            // Prioritize bonus clicks
+            if (userData.bonusClicks > 0) {
                 userData.bonusClicks--;
             } else {
                 userData.dailyClicks++;
