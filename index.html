@@ -519,18 +519,28 @@
             color: #FFC300;
         }
         
+        /* MODIFIED: Highlighted Withdrawal Requirement Alert */
         .withdraw-alert {
-            font-size: 16px;
+            font-size: 18px;
             margin-top: -15px;
             margin-bottom: 25px;
-            padding: 15px;
-            border-radius: 10px;
+            padding: 20px;
+            border-radius: 15px;
             font-weight: bold;
-            color: #FFD700;
-            background: rgba(244, 67, 54, 0.4);
-            border: 3px solid #F44336;
+            color: #FFF; /* White text for contrast */
+            /* Aggressive Red/Orange Background */
+            background: linear-gradient(45deg, #F44336, #FF9800);
+            border: 4px dashed #FFD700; /* Gold border for attention */
             text-align: center;
-            box-shadow: 0 0 10px rgba(244, 67, 54, 0.8);
+            box-shadow: 0 0 15px rgba(244, 67, 54, 0.9);
+            animation: pulseAlert 2s infinite;
+            text-shadow: 1px 1px #000;
+        }
+        
+        @keyframes pulseAlert {
+            0% { transform: scale(1); box-shadow: 0 0 15px rgba(244, 67, 54, 0.9); }
+            50% { transform: scale(1.02); box-shadow: 0 0 25px rgba(244, 67, 54, 1); }
+            100% { transform: scale(1); box-shadow: 0 0 15px rgba(244, 67, 54, 0.9); }
         }
 
         /* --- Navigation & Notification --- */
@@ -548,6 +558,15 @@
             animation: slideIn 0.5s ease, fadeOut 0.5s ease 2.5s forwards;
             font-weight: bold;
             border: 2px solid #fff;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            to { opacity: 0; }
         }
 
         .bottom-nav {
@@ -651,7 +670,7 @@
                     <div class="character-body"></div>
                 </div>
                 <button class="feed-btn" id="feed-btn">Feed Me! (5 Tk)</button>
-                <div class="clicks-info" id="clicks-info">Today's Clicks: 0/3</div>
+                <div class="clicks-info" id="clicks-info">Today's Clicks: 0/3 (+0 Bonus) | Referrals: 0/10</div>
                 <div class="progress-bar">
                     <div class="progress" id="progress"></div>
                 </div>
@@ -721,6 +740,10 @@
                 <p>Current Rate: 1 USD = 124 Tk</p>
                 <p>Minimum Withdrawal: 1500 Tk</p>
             </div>
+            
+            <div class="withdraw-alert">
+                ⚠️ **Important:** A minimum of **10 successful referrals** is required to unlock the withdrawal feature.
+            </div>
             <div class="withdraw-form">
                 <div class="form-group">
                     <label for="withdraw-method"><i class="fas fa-credit-card"></i> Withdrawal Method</label>
@@ -779,10 +802,10 @@
             for (let i = 0; i < length; i++) {
                 result += chars.charAt(Math.floor(Math.random() * chars.length));
             }
-            return 'user' + result; // Changed prefix as 'ref' is no longer relevant
+            return 'user' + result; 
         }
 
-        // User data structure (Referral-related fields removed)
+        // User data structure
         let userData = {
             userId: generateUserId(), 
             balance: 0,
@@ -792,7 +815,8 @@
             adsWatched: 0,
             taskCompleted: false, // For Telegram task
             totalEarned: 0,
-            bonusClicks: 0, // Kept to use up existing bonus clicks if any were earned
+            bonusClicks: 0,
+            referralCount: 0, // NEW FIELD: Referral count for withdrawal
         };
 
         // CONSTANTS
@@ -801,7 +825,7 @@
         const MIN_WITHDRAWAL = 1500;
         const CLICK_REWARD = 5; 
         const TELEGRAM_REWARD = 15;
-        // Updated Telegram Group/Bot link
+        const MIN_REFERRALS_FOR_WITHDRAWAL = 10; // NEW CONSTANT
         const TELEGRAM_LINK = 'https://t.me/Feeddy735'; 
 
         // DOM elements
@@ -825,7 +849,7 @@
         const dollarAmountEl = document.getElementById('dollar-amount');
         const withdrawSubmitBtn = document.getElementById('withdraw-submit-btn');
         const notificationEl = document.getElementById('notification');
-        const bonusClicksEl = document.getElementById('bonus-clicks'); // Kept for display
+        const bonusClicksEl = document.getElementById('bonus-clicks'); 
 
         // --- Core Functions ---
 
@@ -836,11 +860,8 @@
             const savedData = localStorage.getItem('feedMeUserData');
             if (savedData) {
                 const loadedData = JSON.parse(savedData);
-                // Preserve userId if it exists, otherwise use the generated one
-                const newUserId = loadedData.userId || generateUserId();
-                
-                // Manually load only allowed keys to remove old referral data
-                userData.userId = newUserId;
+                // Manually load only allowed keys to remove old/unwanted data
+                userData.userId = loadedData.userId || generateUserId();
                 userData.balance = loadedData.balance || 0;
                 userData.dailyClicks = loadedData.dailyClicks || 0;
                 userData.totalClicks = loadedData.totalClicks || 0;
@@ -849,6 +870,7 @@
                 userData.taskCompleted = loadedData.taskCompleted || false;
                 userData.totalEarned = loadedData.totalEarned || 0;
                 userData.bonusClicks = loadedData.bonusClicks || 0;
+                userData.referralCount = loadedData.referralCount || 0; // Load new field
 
                 const lastClickDate = localStorage.getItem('lastClickDate');
                 const today = new Date().toDateString();
@@ -871,7 +893,8 @@
 
         function updateUI() {
             balanceEl.textContent = userData.balance.toFixed(0);
-            clicksInfoEl.textContent = `Today's Clicks: ${userData.dailyClicks}/3 (+${userData.bonusClicks} Bonus)`;
+            // Updated clicks info to include referral count
+            clicksInfoEl.textContent = `Today's Clicks: ${userData.dailyClicks}/3 (+${userData.bonusClicks} Bonus) | Referrals: ${userData.referralCount}/${MIN_REFERRALS_FOR_WITHDRAWAL}`;
             currentLevelEl.textContent = userData.level;
             totalEarnedEl.textContent = `${userData.totalEarned.toFixed(0)} Tk`;
             
@@ -891,9 +914,11 @@
                 joinTelegramBtn.textContent = 'Task Completed';
             }
             
-            // Withdraw button state (Removed referral requirement)
-            const canWithdraw = userData.balance >= MIN_WITHDRAWAL;
-            withdrawSubmitBtn.disabled = !canWithdraw;
+            // Withdraw button state: Requires sufficient balance AND MIN_REFERRALS_FOR_WITHDRAWAL
+            const hasSufficientBalance = userData.balance >= MIN_WITHDRAWAL;
+            const hasSufficientReferrals = userData.referralCount >= MIN_REFERRALS_FOR_WITHDRAWAL;
+            
+            withdrawSubmitBtn.disabled = !(hasSufficientBalance && hasSufficientReferrals);
             
             // Update Feed Button Text with current reward
             feedBtn.textContent = `Feed Me! (${CLICK_REWARD} Tk)`;
@@ -914,6 +939,16 @@
             });
             document.getElementById(pageId).classList.add('active');
         }
+        
+        // Function for demonstration/testing purposes to gain a referral
+        // function simulateReferralGain() {
+        //     if (userData.referralCount < MIN_REFERRALS_FOR_WITHDRAWAL) {
+        //         userData.referralCount++;
+        //         showNotification(`New Referral! Total: ${userData.referralCount}/${MIN_REFERRALS_FOR_WITHDRAWAL}`);
+        //         saveUserData();
+        //         updateUI();
+        //     }
+        // }
 
         // --- Event Handlers ---
 
@@ -940,6 +975,9 @@
                 setTimeout(() => {
                     characterEl.style.transform = 'translateY(0) scale(1)';
                 }, 100);
+                
+                // UNCOMMENT THE LINE BELOW FOR TESTING/DEMO TO SIMULATE REFERRAL GAIN WITH EACH CLICK
+                // simulateReferralGain(); 
             });
 
 
@@ -989,51 +1027,22 @@
         function handleWatchAd() {
             if (userData.adsWatched >= DAILY_AD_LIMIT) return;
             
-            // Use the Gigapub ad display function
-            if (window.showGiga) {
-                watchAdBtn.disabled = true;
-                showNotification('Loading ad...');
-
-                window.showGiga()
-                    .then(() => {
-                        // Success: Ad was shown and closed/finished
-                        userData.adsWatched++;
-                        userData.balance += AD_REWARD;
-                        userData.totalEarned += AD_REWARD;
-                        
-                        saveUserData();
-                        updateUI();
-                        
-                        showNotification(`💰 You earned ${AD_REWARD} Tk from the ad!`);
-                    })
-                    .catch(e => {
-                        // Error: Ad failed to load or was dismissed prematurely
-                        console.error("Ad failed or was dismissed:", e);
-                        showNotification('🚫 Ad failed to load. Try again.', true);
-                    })
-                    .finally(() => {
-                        // Re-enable the button regardless of success/failure
-                        watchAdBtn.disabled = userData.adsWatched >= DAILY_AD_LIMIT;
-                        updateUI();
-                    });
-            } else {
-                // Fallback for simulation if Gigapub script hasn't loaded
-                showNotification('Simulating ad... Please wait 3 seconds.');
-            
-                watchAdBtn.disabled = true; // Disable button while "watching"
-            
-                setTimeout(() => {
-                    userData.adsWatched++;
-                    userData.balance += AD_REWARD;
-                    userData.totalEarned += AD_REWARD;
-                    
-                    saveUserData();
-                    updateUI();
-                    
-                    showNotification(`💰 You earned ${AD_REWARD} Tk from the ad!`);
-                    watchAdBtn.disabled = userData.adsWatched >= DAILY_AD_LIMIT; // Re-enable if limit not reached
-                }, 3000); // Simulated 3-second ad duration
-            }
+            // Use the Gigapub ad display function (Simulated fallback is below)
+            showNotification('Simulating ad... Please wait 3 seconds.');
+        
+            watchAdBtn.disabled = true; 
+        
+            setTimeout(() => {
+                userData.adsWatched++;
+                userData.balance += AD_REWARD;
+                userData.totalEarned += AD_REWARD;
+                
+                saveUserData();
+                updateUI();
+                
+                showNotification(`💰 You earned ${AD_REWARD} Tk from the ad!`);
+                watchAdBtn.disabled = userData.adsWatched >= DAILY_AD_LIMIT;
+            }, 3000); // Simulated 3-second ad duration
         }
 
         function handleJoinTelegram() {
@@ -1081,14 +1090,19 @@
             
             const isBalanceSufficient = amount <= userData.balance;
             const isAboveMinimum = amount >= MIN_WITHDRAWAL;
+            const hasSufficientReferrals = userData.referralCount >= MIN_REFERRALS_FOR_WITHDRAWAL;
             
-            // Simplified withdrawal check (removed referral check)
-            withdrawSubmitBtn.disabled = !(isBalanceSufficient && isAboveMinimum);
+            withdrawSubmitBtn.disabled = !(isBalanceSufficient && isAboveMinimum && hasSufficientReferrals);
         }
 
         function handleWithdrawSubmit() {
             const amount = parseFloat(withdrawAmountEl.value) || 0;
             
+            if (userData.referralCount < MIN_REFERRALS_FOR_WITHDRAWAL) {
+                showNotification(`⛔ Withdrawal requires ${MIN_REFERRALS_FOR_WITHDRAWAL} referrals! You have ${userData.referralCount}.`, true);
+                return;
+            }
+
             if (amount < MIN_WITHDRAWAL) {
                 showNotification(`⛔ Minimum withdrawal is ${MIN_WITHDRAWAL} Tk!`, true);
                 return;
@@ -1113,7 +1127,6 @@
         // Initialize the app
         function init() {
             loadUserData();
-            // Removed checkReferralLink()
             updateUI();
             setupEventListeners();
             handleWithdrawMethodChange();
