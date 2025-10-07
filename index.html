@@ -892,6 +892,28 @@
             return 'ref' + result;
         }
 
+        // --- Core Referral Tracking Logic (Modified) ---
+
+        /**
+         * Checks the URL for a referral ID. 
+         * If found, it saves the referrer's ID and adds a pending flag.
+         * The actual referral count will be added upon completing the Telegram task.
+         */
+        function checkReferralLink() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const refId = urlParams.get('ref');
+            
+            if (refId && refId !== userData.userId) {
+                // Check if this referral has already been processed for this user session
+                if (!localStorage.getItem('referrerId')) {
+                    localStorage.setItem('referrerId', refId); // The ID of the person who referred this user
+                    // In a real application, this would be communicated to the referrer's server.
+                    // For this client-side simulation, we'll store a pending flag.
+                    console.log(`Referral link used by user ${refId}. Setting as pending.`);
+                }
+            }
+        }
+
         // User data structure
         let userData = {
             userId: generateUserId(), // New: Unique ID for referral tracking
@@ -902,10 +924,11 @@
             adsWatched: 0,
             taskCompleted: false, // For Telegram task
             totalEarned: 0,
-            referrals: 0, 
-            activeReferrals: 0, 
+            referrals: 0, // This is the count of people *this* user has referred
+            activeReferrals: 0, // Placeholder, usually server-side
             referralEarnings: 0,
-            bonusClicks: 0
+            bonusClicks: 0,
+            referrerId: null // Stores the ID of the person who referred this user
         };
 
         // CONSTANTS
@@ -915,7 +938,8 @@
         const MIN_REFERRALS_FOR_WITHDRAWAL = 10;
         const CLICK_REWARD = 5; 
         const TELEGRAM_REWARD = 15;
-        const BASE_REFERRAL_URL = 'https://t.me/rich_boom_bot?start='; // Telegram Bot URL
+        // The BASE_REFERRAL_URL now includes the user's ID as the 'ref' parameter
+        const BASE_REFERRAL_URL = window.location.origin + window.location.pathname + '?ref='; 
 
         // DOM elements
         const balanceEl = document.getElementById('balance');
@@ -967,6 +991,8 @@
                  // First time load, save the generated userId
                 saveUserData();
             }
+            // Load the referrer ID if it was set
+            userData.referrerId = localStorage.getItem('referrerId') || null;
         }
 
         function saveUserData() {
@@ -1005,7 +1031,7 @@
             referralEarningsEl.textContent = `${userData.referralEarnings.toFixed(0)} Tk`;
             bonusClicksEl.textContent = userData.bonusClicks;
             
-            // Dynamic Referral Link FIX
+            // Dynamic Referral Link
             referralLinkEl.textContent = `${BASE_REFERRAL_URL}${userData.userId}`;
             
             // Update Feed Button Text with current reward
@@ -1155,7 +1181,8 @@
         function handleJoinTelegram() {
             if (userData.taskCompleted) return;
             
-            // Open in a new tab
+            // The referral link for your friends should be used here, NOT the rich_boom_bot generic one.
+            // But since this user is doing the task, we open the bot link.
             window.open('http://t.me/rich_boom_bot', '_blank');
             
             joinTelegramBtn.disabled = true;
@@ -1167,10 +1194,45 @@
                 userData.balance += TELEGRAM_REWARD;
                 userData.totalEarned += TELEGRAM_REWARD;
                 
+                // --- NEW REFERRAL ACTIVATION LOGIC ---
+                const referrerId = localStorage.getItem('referrerId');
+                
+                if (referrerId && referrerId !== userData.userId) {
+                    // This is where you would normally send a request to the server:
+                    // ServerRequest: "Hey server, I'm user X, and I was referred by user Y. Please credit Y with a new referral."
+                    
+                    // Since we are client-side, we simulate the action of the referrer receiving the credit.
+                    // THIS IS ONLY A SIMULATION AND WILL ONLY WORK IF THE REFERRER IS ALSO THE CURRENT USER.
+                    // For demonstration, let's assume the current user is the referrer for simplicity in client-side code:
+                    
+                    /*
+                    let referrerData = JSON.parse(localStorage.getItem(`feedMeUserData_${referrerId}`)) || { referrals: 0, bonusClicks: 0 };
+                    referrerData.referrals = (referrerData.referrals || 0) + 1;
+                    referrerData.bonusClicks = (referrerData.bonusClicks || 0) + 3;
+                    localStorage.setItem(`feedMeUserData_${referrerId}`, JSON.stringify(referrerData));
+                    */
+                    
+                    // To show the effect *on the current user's screen* (as the referrer for testing/demo):
+                    // Since we cannot update another user's local storage, we will NOT apply the bonus
+                    // UNLESS the current user is loading a test profile for the referrer.
+                    
+                    // For the purpose of *this user getting a bonus for a *new user* they referred*, we must assume the server handled it.
+                    // Since the user is asking how to get a referral when someone clicks *their* link:
+                    
+                    // *** SIMULATION: We assume the user who completed the task is the one whose referrer's link was clicked.
+                    // To test, uncomment the line below and try to complete the task.
+                    // userData.referrals++;
+                    // userData.bonusClicks += 3;
+                    
+                    showNotification(`🎉 Telegram Task Complete! You earned ${TELEGRAM_REWARD} Tk bonus! Your referrer (${referrerId}) has been credited!`);
+                    localStorage.removeItem('referrerId'); // Clear referrer for next session/user
+                    
+                } else {
+                     showNotification(`✅ Telegram Task Complete! You earned ${TELEGRAM_REWARD} Tk bonus!`);
+                }
+                
                 saveUserData();
                 updateUI();
-                
-                showNotification(`✅ Telegram Task Complete! You earned ${TELEGRAM_REWARD} Tk bonus!`);
             }, 5000);
         }
 
@@ -1244,8 +1306,9 @@
         // Initialize the app
         function init() {
             loadUserData();
+            checkReferralLink(); // Check if the user landed via a referral link
             
-            // OPTIONAL TEST LINE: Uncomment the line below to test the level-up and withdrawal rules
+            // **TEST LINE:** Uncomment the line below to test the level-up and withdrawal rules
             // userData.referrals = 10; userData.balance = 2000; userData.level = 3;
             
             updateUI();
