@@ -1104,7 +1104,8 @@
             }
 
             if (amount < MIN_WITHDRAWAL) {
-                showNotification(`⛔ Minimum withdrawal is ${MIN_WITHDRAWAL} Tk!`, true);
+                // MODIFICATION: Changed the notification text as requested.
+                showNotification(`⛔ You haven't reached 1500 Tk yet!`, true);
                 return;
             }
             
