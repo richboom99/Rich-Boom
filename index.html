@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feed Me - Idle Clicker Game</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* General Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Nunito', sans-serif; /* Base font for readability */
+        }
+
+        /* --- Global & Background Enhancement (More Vibrant Cartoon Look) --- */
+
+        body {
+            background: #FF5733; /* Fallback */
+            color: #fff;
+            min-height: 100vh;
+            /* New Vibrant Gradient */
+            background: linear-gradient(145deg, #1C2B5B, #6D2B7E, #FF5733, #FFC300);
+            background-size: 400% 400%;
+            animation: gradientBG 20s ease infinite;
+            padding-bottom: 80px; /* Space for fixed bottom nav */
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Subtle Cartoon Pattern Overlay (Adds visual texture/depth) */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M5 0h1L0 6V5zm1 5v1H5z'/%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.5;
+            z-index: -1;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes pulseBalance {
+            0% { transform: scale(1); text-shadow: none; }
+            50% { transform: scale(1.05); text-shadow: 0 0 5px #fff; }
+            100% { transform: scale(1); text-shadow: none; }
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+
+        /* --- Header & UI Elements --- */
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            font-family: 'Bungee', cursive;
+            text-shadow: 3px 3px #000;
+            color: #FFD700; /* Gold */
+            letter-spacing: 1px;
+        }
+
+        .logo i {
+            margin-right: 8px;
+            font-size: 36px;
+            color: #FF5733; /* Orange/Red Accent */
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px 15px;
+            border-radius: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            border: 2px solid #FFD700;
+        }
+
+        .balance {
+            margin-right: 15px;
+            font-weight: 800;
+            font-size: 20px;
+            color: #33FF33; /* Bright Green */
+            text-shadow: 1px 1px #000;
+            animation: pulseBalance 4s ease infinite;
+        }
+
+        .user-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: #FFD700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #1C2B5B;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.6);
+            border: 3px solid #fff;
+            font-size: 20px;
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.6s ease-out;
+            /* More pronounced dark, glass-like container */
+            background: rgba(0, 0, 0, 0.65);
+            border-radius: 25px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-height: 60vh;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(25px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-title {
+            font-size: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            border-bottom: 4px double #FF5733; /* Double border for effect */
+            padding-bottom: 10px;
+            font-family: 'Bungee', cursive;
+            text-shadow: 2px 2px #000;
+            color: #FFC300; /* Gold */
+        }
+
+        /* --- Character & Home Page --- */
+
+        .character-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .character {
+            width: 250px;
+            height: 350px;
+            position: relative;
+            margin-bottom: 20px;
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55); /* Bounce transition */
+            filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.8));
+            cursor: pointer;
+        }
+
+        .character-body, .character-head {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: all 0.5s ease;
+            border: 4px solid #000;
+            box-shadow: inset 0 -5px 5px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+
+        .character-body {
+            bottom: 0;
+            width: 180px;
+            height: 250px;
+            border-radius: 60% 60% 40% 40%;
+        }
+
+        .character-head {
+            top: 20px;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            z-index: 2;
+        }
+
+        .character-face {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 50px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .eye {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #000;
+            border: 3px solid white;
+            animation: blink 4s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50%, 100% { transform: scaleY(1); }
+            52%, 98% { transform: scaleY(0.1); }
+        }
+
+        .mouth {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 15px;
+            border-radius: 0 0 15px 15px;
+            transition: all 0.3s ease;
+            border: 2px solid #000;
+            z-index: 3;
+        }
+
+        /* Level 1 - Poor Beggar (Grungy/Worn Look) */
+        .level-1 .character-body {
+            background: repeating-linear-gradient(45deg, #473e35, #473e35 10px, #6c5f54 10px, #6c5f54 20px); /* Patchy Rags */
+            border-bottom: 10px solid #8B4513;
+        }
+        .level-1 .character-head { background: #FFDAB9; border-color: #473e35; }
+        .level-1 .mouth { background: #8B0000; height: 5px; border-width: 0; border-radius: 5px; }
+
+        /* Level 2 - Simple Citizen (Clean/Solid Look) */
+        .level-2 .character-body {
+            background: linear-gradient(to bottom, #5d8aa8, #87ceeb); /* Clean Blue Tunic */
+            border-color: #1C2B5B;
+        }
+        .level-2 .character-head { background: #FADADD; border-color: #5d8aa8; }
+        .level-2 .mouth { background: #32CD32; height: 10px; border-radius: 5px; border-color: #000; }
+
+        /* Level 3 - Royal/Hero (Shiny Gold Armor) */
+        .level-3 .character-body {
+            background: linear-gradient(to bottom, #FFD700, #FFA500); /* Golden Armor */
+            border: 5px solid #B8860B;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+        }
+        .level-3 .character-head { background: #FFC0CB; border-color: #B8860B; }
+        .level-3 .mouth { 
+            background: #FF1493; 
+            height: 15px; 
+            width: 50px;
+            border-radius: 15px; 
+            border: 2px solid #000; 
+            box-shadow: 0 0 5px #FF1493;
+        }
+        
+        .feed-btn {
+            background: linear-gradient(to right, #FF5733, #FFC300);
+            color: #1C2B5B; /* Dark Blue Text */
+            border: 4px solid #fff;
+            padding: 18px 60px;
+            font-size: 24px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 10px 0 #902C08, 0 15px 30px rgba(255, 87, 34, 0.6);
+            margin-bottom: 25px;
+            font-weight: 800;
+            font-family: 'Bungee', cursive;
+            text-transform: uppercase;
+            text-shadow: 1px 1px #fff;
+        }
+
+        .feed-btn:active {
+            box-shadow: 0 3px 0 #902C08, 0 8px 15px rgba(255, 87, 34, 0.6);
+            transform: translateY(7px);
+        }
+
+        .feed-btn:disabled {
+            background: linear-gradient(to right, #795548, #A1887F);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 8px 0 #4E342E, 0 10px 20px rgba(0, 0, 0, 0.4);
+            border-color: #4E342E;
+            color: #fff;
+            text-shadow: 1px 1px #000;
+        }
+
+        .clicks-info {
+            font-size: 20px;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 12px 25px;
+            border-radius: 20px;
+            text-align: center;
+            border: 2px dashed #FFC300;
+            font-weight: 700;
+            color: #FFC300;
+        }
+
+        /* Progress Bar Refinement */
+        .progress-bar {
+            width: 90%;
+            max-width: 500px;
+            height: 25px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            margin-bottom: 30px;
+            overflow: hidden;
+            border: 3px solid #fff;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.6);
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(to right, #4CAF50, #00FF7F); /* Brighter Green */
+            width: 0%;
+            transition: width 0.5s ease-out;
+            border-right: 3px solid white;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.4);
+        }
+
+        .level-info {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 600px;
+            margin-top: 20px;
+        }
+
+        .level-box {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            flex: 1;
+            margin: 0 10px;
+            border: 2px solid #FF5733;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6);
+        }
+
+        .level-box h3 {
+            margin-bottom: 8px;
+            font-size: 18px;
+            color: #ccc;
+            font-weight: 700;
+        }
+
+        .level-box p {
+            font-size: 32px;
+            font-weight: 800;
+            color: #33FF33;
+            font-family: 'Bungee', cursive;
+        }
+
+        /* --- Earn & Task Pages --- */
+
+        .earn-options, .task-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+        }
+
+        .earn-box, .task-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .earn-box:hover, .task-box:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.18);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
+        }
+
+        .earn-box h3, .task-box h3 {
+            margin-bottom: 10px;
+            font-size: 24px;
+            color: #FFC300;
+            font-family: 'Bungee', cursive;
+        }
+
+        .earn-box p, .task-box p {
+            margin-bottom: 15px;
+            font-size: 16px;
+            line-height: 1.5;
+            font-weight: 600;
+        }
+        
+        .task-box i {
+            font-size: 50px;
+            color: #FF5733;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 5px rgba(255, 87, 34, 0.7));
+        }
+
+        .earn-btn, .task-btn {
+            background: linear-gradient(to right, #4CAF50, #33FF33); /* Neon Green */
+            color: #1C2B5B;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 800;
+            box-shadow: 0 5px 0 #2E7D32, 0 10px 20px rgba(76, 175, 80, 0.5);
+            font-size: 16px;
+            text-transform: uppercase;
+        }
+        
+        .earn-btn:active, .task-btn:active {
+            box-shadow: 0 2px 0 #2E7D32, 0 5px 10px rgba(76, 175, 80, 0.5);
+            transform: translateY(3px);
+        }
+
+        .earn-btn:disabled, .task-btn:disabled {
+            background: #A5D6A7;
+            cursor: not-allowed;
+            box-shadow: 0 4px 0 #799F7A;
+            transform: none;
+            color: #444;
+        }
+
+        /* --- Withdraw Page --- */
+
+        .withdraw-form {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 550px;
+            margin: 0 auto;
+            border: 3px solid #2196F3;
+            box-shadow: 0 0 20px rgba(33, 150, 243, 0.5);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #FFC300;
+            font-size: 18px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid #ccc;
+            background: #fff;
+            color: #333;
+            font-size: 16px;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .withdraw-btn {
+            background: linear-gradient(to right, #2196F3, #4FC3F7); /* Bright Blue */
+            color: white;
+            border: none;
+            padding: 18px 30px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 20px;
+            width: 100%;
+            transition: all 0.2s ease;
+            font-weight: 800;
+            box-shadow: 0 5px 0 #0D47A1, 0 10px 20px rgba(33, 150, 243, 0.7);
+        }
+
+        .withdraw-btn:active {
+            box-shadow: 0 2px 0 #0D47A1, 0 5px 10px rgba(33, 150, 243, 0.7);
+            transform: translateY(3px);
+        }
+
+        .withdraw-btn:disabled {
+            background: #BBDEFB;
+            cursor: not-allowed;
+            box-shadow: 0 4px 0 #64B5F6;
+            transform: none;
+            color: #444;
+        }
+
+        .conversion-info {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            text-align: center;
+            border: 2px solid #33FF33;
+            box-shadow: 0 0 15px rgba(51, 255, 51, 0.5);
+        }
+        
+        .conversion-info p {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 5px 0;
+            color: #FFC300;
+        }
+        
+        .withdraw-alert {
+            font-size: 16px;
+            margin-top: -15px;
+            margin-bottom: 25px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            color: #FFD700;
+            background: rgba(244, 67, 54, 0.4);
+            border: 3px solid #F44336;
+            text-align: center;
+            box-shadow: 0 0 10px rgba(244, 67, 54, 0.8);
+        }
+
+        /* --- Navigation & Notification --- */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #FF5733;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 1000;
+            animation: slideIn 0.5s ease, fadeOut 0.5s ease 2.5s forwards;
+            font-weight: bold;
+            border: 2px solid #fff;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1C2B5B; /* Dark Blue */
+            display: flex;
+            justify-content: space-around;
+            padding: 5px 0;
+            z-index: 100;
+            border-top: 5px solid #FFC300;
+            box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.8);
+        }
+
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #ccc;
+            text-decoration: none;
+            padding: 10px 10px;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+            font-weight: 700;
+        }
+
+        .nav-btn i {
+            font-size: 26px;
+            margin-bottom: 4px;
+        }
+
+        .nav-btn span {
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .nav-btn.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: #FFC300;
+            transform: translateY(-3px);
+        }
+        
+        /* Referral Styles (Minor refinement) */
+        .referral-link {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 16px;
+            color: #33FF33;
+            border: 2px dashed #33FF33;
+            box-shadow: inset 0 0 10px rgba(51, 255, 51, 0.5);
+        }
+        
+        .stat-box p {
+            color: #33FF33; /* Make stats pop more */
+        }
+        
+        /* Media Queries for Responsiveness */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                text-align: center;
+                padding-top: 20px;
+            }
+            .user-info {
+                margin-top: 15px;
+            }
+            .page {
+                padding: 15px;
+            }
+            .level-info {
+                flex-direction: column;
+            }
+            .level-box {
+                margin: 8px 0;
+            }
+            .earn-options, .task-options, .referral-stats {
+                grid-template-columns: 1fr;
+            }
+            .feed-btn {
+                font-size: 20px;
+                padding: 15px 40px;
+            }
+            .character {
+                width: 220px;
+                height: 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-utensils"></i> Feed Me
+            </div>
+            <div class="user-info">
+                <div class="balance">Balance: <span id="balance">0</span> Tk</div>
+                <div class="user-avatar">U</div>
+            </div>
+        </header>
+
+        <div id="home" class="page active">
+            <h2 class="section-title">Feed the Character!</h2>
+            <div class="character-container">
+                <div class="character level-1" id="character">
+                    <div class="character-head">
+                        <div class="character-face">
+                            <div class="eye"></div>
+                            <div class="eye"></div>
+                        </div>
+                        <div class="mouth"></div>
+                    </div>
+                    <div class="character-body"></div>
+                </div>
+                <button class="feed-btn" id="feed-btn">Feed Me! (30 Tk)</button>
+                <div class="clicks-info" id="clicks-info">Today's Clicks: 0/3</div>
+                <div class="progress-bar">
+                    <div class="progress" id="progress"></div>
+                </div>
+                <div class="level-info">
+                    <div class="level-box">
+                        <h3>Current Level</h3>
+                        <p id="current-level">1</p>
+                    </div>
+                    <div class="level-box">
+                        <h3>Total Earned</h3>
+                        <p id="total-earned">0 Tk</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="earn" class="page">
+            <h2 class="section-title">Quick Earnings: Watch Ads</h2>
+            <div class="earn-options">
+                <div class="earn-box">
+                    <h3>Watch Video Ad</h3>
+                    <p>Earn **5 Tk** for each 30-second ad you watch.</p>
+                    <p>Daily Limit: 30 ads</p>
+                    <p id="ads-count">Watched Today: 0/30</p>
+                    <button class="earn-btn" id="watch-ad-btn">Watch Ad (5 Tk)</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tasks" class="page">
+            <h2 class="section-title">Complete Tasks & Get Bonus</h2>
+            <div class="task-options">
+                <div class="task-box">
+                    <i class="fab fa-telegram-plane"></i>
+                    <h3>Join Telegram</h3>
+                    <p>Join our official Telegram channel for updates.</p>
+                    <p>Bonus: **15 Tk**</p>
+                    <button class="task-btn" id="join-telegram-btn">Join Channel</button>
+                </div>
+                <div class="task-box">
+                    <i class="fab fa-youtube"></i>
+                    <h3>Subscribe YouTube</h3>
+                    <p>Watch and subscribe to our YouTube video.</p>
+                    <p>Bonus: **20 Tk**</p>
+                    <button class="task-btn" disabled>Coming Soon</button>
+                </div>
+                <div class="task-box">
+                    <i class="fab fa-twitter"></i>
+                    <h3>Follow on X (Twitter)</h3>
+                    <p>Follow our official X account and retweet our pinned post.</p>
+                    <p>Bonus: **10 Tk**</p>
+                    <button class="task-btn" disabled>Coming Soon</button>
+                </div>
+                <div class="task-box">
+                    <i class="fas fa-mobile-alt"></i>
+                    <h3>Download App</h3>
+                    <p>Download and run our partner's mobile application.</p>
+                    <p>Bonus: **50 Tk**</p>
+                    <button class="task-btn" disabled>Coming Soon</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="withdraw" class="page">
+            <h2 class="section-title">Withdraw Your Earnings</h2>
+            <div class="conversion-info">
+                <p>Current Rate: 1 USD = 124 Tk</p>
+                <p>Minimum Withdrawal: 1500 Tk</p>
+            </div>
+            <div class="withdraw-alert">
+                Minimum 10 active referrals are required for withdrawal!
+            </div>
+            <div class="withdraw-form">
+                <div class="form-group">
+                    <label for="withdraw-method"><i class="fas fa-credit-card"></i> Withdrawal Method</label>
+                    <select id="withdraw-method">
+                        <option value="bikash">Bikash</option>
+                        <option value="nagad">Nagad</option>
+                        <option value="binance">Binance (Crypto)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="account-number-group">
+                    <label for="account-number"><i class="fas fa-hashtag"></i> Account Number</label>
+                    <input type="text" id="account-number" placeholder="Enter your Bikash/Nagad number">
+                </div>
+                <div class="form-group" id="binance-uid-group" style="display: none;">
+                    <label for="binance-uid"><i class="fas fa-fingerprint"></i> Binance UID</label>
+                    <input type="text" id="binance-uid" placeholder="Enter your Binance UID">
+                </div>
+                <div class="form-group">
+                    <label for="withdraw-amount"><i class="fas fa-coins"></i> Withdrawal Amount (in Tk)</label>
+                    <input type="number" id="withdraw-amount" placeholder="Enter withdrawal amount">
+                </div>
+                <div class="form-group" id="dollar-conversion" style="display: none;">
+                    <p>Amount in USD: <span id="dollar-amount">0.00</span> USD</p>
+                </div>
+                <button class="withdraw-btn" id="withdraw-submit-btn">Submit Withdrawal Request</button>
+            </div>
+        </div>
+
+        <div id="referral" class="page">
+            <h2 class="section-title">Refer & Earn Big</h2>
+            <div class="referral-box">
+                <h3><i class="fas fa-link"></i> Your Referral Link</h3>
+                <p>Share this link to give your friends a head start and earn massive bonuses!</p>
+                <div class="referral-link" id="referral-link">https://t.me/rich_boom_bot?start=ref12345</div>
+                <button class="copy-btn" id="copy-ref-btn"><i class="fas fa-copy"></i> Copy Link</button>
+            </div>
+            
+            <div class="referral-stats">
+                <div class="stat-box">
+                    <h4>Total Referrals</h4>
+                    <p id="total-referrals">0</p>
+                </div>
+                <div class="stat-box">
+                    <h4>Bonus Clicks</h4>
+                    <p id="bonus-clicks">0</p>
+                </div>
+                <div class="stat-box">
+                    <h4>Referral Earnings</h4>
+                    <p id="referral-earnings">0 Tk</p>
+                </div>
+                <div class="stat-box">
+                    <h4>Lifetime Bonus</h4>
+                    <p>10%</p>
+                </div>
+            </div>
+            
+            <div class="earn-box" style="margin-top: 30px;">
+                <h3>How Referral Works</h3>
+                <p>1. Share your referral link with friends.</p>
+                <p>2. You instantly get **3 bonus clicks** per sign-up.</p>
+                <p>3. Earn **10%** of their click earnings for the first week.</p>
+                <p>4. Get an extra **50 Tk bonus** when your friend makes their first successful withdrawal!</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <a href="#" class="nav-btn active" data-page="home">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="#" class="nav-btn" data-page="earn">
+            <i class="fas fa-video"></i>
+            <span>Ads</span>
+        </a>
+        <a href="#" class="nav-btn" data-page="tasks">
+            <i class="fas fa-clipboard-list"></i>
+            <span>Tasks</span>
+        </a>
+        <a href="#" class="nav-btn" data-page="referral">
+            <i class="fas fa-users"></i>
+            <span>Referral</span>
+        </a>
+        <a href="#" class="nav-btn" data-page="withdraw">
+            <i class="fas fa-wallet"></i>
+            <span>Withdraw</span>
+        </a>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        // User data
+        let userData = {
+            balance: 0,
+            dailyClicks: 0,
+            totalClicks: 0,
+            level: 1,
+            adsWatched: 0,
+            taskCompleted: false, // For Telegram task
+            totalEarned: 0,
+            referrals: 0, 
+            activeReferrals: 0, 
+            referralEarnings: 0,
+            bonusClicks: 0
+        };
+
+        // CONSTANTS
+        const DAILY_AD_LIMIT = 30;
+        const AD_REWARD = 5; // MODIFIED: Reduced from 10 Tk to 5 Tk
+        const MIN_WITHDRAWAL = 1500;
+        const MIN_REFERRALS_FOR_WITHDRAWAL = 10;
+        const CLICK_REWARD = 30; // Kept the same
+        const TELEGRAM_REWARD = 15; // Kept the same
+
+
+        // DOM elements
+        const balanceEl = document.getElementById('balance');
+        const feedBtn = document.getElementById('feed-btn');
+        const clicksInfoEl = document.getElementById('clicks-info');
+        const progressEl = document.getElementById('progress');
+        const currentLevelEl = document.getElementById('current-level');
+        const totalEarnedEl = document.getElementById('total-earned');
+        const characterEl = document.getElementById('character');
+        const navBtns = document.querySelectorAll('.nav-btn');
+        const pages = document.querySelectorAll('.page');
+        const watchAdBtn = document.getElementById('watch-ad-btn');
+        const joinTelegramBtn = document.getElementById('join-telegram-btn');
+        const adsCountEl = document.getElementById('ads-count');
+        const withdrawMethodEl = document.getElementById('withdraw-method');
+        const accountNumberGroup = document.getElementById('account-number-group');
+        const binanceUidGroup = document.getElementById('binance-uid-group');
+        const withdrawAmountEl = document.getElementById('withdraw-amount');
+        const dollarConversionEl = document.getElementById('dollar-conversion');
+        const dollarAmountEl = document.getElementById('dollar-amount');
+        const withdrawSubmitBtn = document.getElementById('withdraw-submit-btn');
+        const notificationEl = document.getElementById('notification');
+        const referralLinkEl = document.getElementById('referral-link');
+        const copyRefBtn = document.getElementById('copy-ref-btn');
+        const totalReferralsEl = document.getElementById('total-referrals');
+        const referralEarningsEl = document.getElementById('referral-earnings');
+        const bonusClicksEl = document.getElementById('bonus-clicks');
+
+        // --- Core Functions ---
+
+        function loadUserData() {
+            const savedData = localStorage.getItem('feedMeUserData');
+            if (savedData) {
+                const loadedData = JSON.parse(savedData);
+                userData = { ...userData, ...loadedData };
+                
+                const lastClickDate = localStorage.getItem('lastClickDate');
+                const today = new Date().toDateString();
+                
+                if (lastClickDate !== today) {
+                    userData.dailyClicks = 0;
+                    userData.adsWatched = 0;
+                    localStorage.setItem('lastClickDate', today);
+                    saveUserData();
+                }
+            }
+        }
+
+        function saveUserData() {
+            localStorage.setItem('feedMeUserData', JSON.stringify(userData));
+        }
+
+        function updateUI() {
+            balanceEl.textContent = userData.balance.toFixed(0);
+            clicksInfoEl.textContent = `Today's Clicks: ${userData.dailyClicks}/3 (+${userData.bonusClicks} Bonus)`;
+            currentLevelEl.textContent = userData.level;
+            totalEarnedEl.textContent = `${userData.totalEarned.toFixed(0)} Tk`;
+            adsCountEl.textContent = `Watched Today: ${userData.adsWatched}/${DAILY_AD_LIMIT}`;
+            
+            // Progress bar (Level up every 10 total clicks)
+            const progressPercent = (userData.totalClicks % 10) * 10;
+            progressEl.style.width = `${progressPercent}%`;
+            
+            // Character level update
+            characterEl.className = 'character';
+            characterEl.classList.add(`level-${userData.level}`);
+            
+            // Button states
+            feedBtn.disabled = userData.dailyClicks >= 3 && userData.bonusClicks <= 0;
+            watchAdBtn.disabled = userData.adsWatched >= DAILY_AD_LIMIT;
+            joinTelegramBtn.disabled = userData.taskCompleted;
+            if (userData.taskCompleted) {
+                joinTelegramBtn.textContent = 'Task Completed';
+            }
+            
+            // Withdraw button state
+            const canWithdraw = userData.balance >= MIN_WITHDRAWAL && userData.referrals >= MIN_REFERRALS_FOR_WITHDRAWAL;
+            withdrawSubmitBtn.disabled = !canWithdraw;
+
+            // Referral stats
+            totalReferralsEl.textContent = userData.referrals;
+            referralEarningsEl.textContent = `${userData.referralEarnings.toFixed(0)} Tk`;
+            bonusClicksEl.textContent = userData.bonusClicks;
+        }
+
+        function showNotification(message, isError = false) {
+            notificationEl.textContent = message;
+            notificationEl.style.backgroundColor = isError ? '#F44336' : '#4CAF50';
+            notificationEl.style.display = 'block';
+            setTimeout(() => {
+                notificationEl.style.display = 'none';
+            }, 3000);
+        }
+        
+        function showPage(pageId) {
+            pages.forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        // --- Event Handlers ---
+
+        function setupEventListeners() {
+            // Navigation
+            navBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const pageId = btn.getAttribute('data-page');
+                    showPage(pageId);
+                    
+                    navBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+            });
+            
+            // Feed button
+            feedBtn.addEventListener('click', handleFeedClick);
+            
+            // Character click for visual feedback (optional, but nice)
+            characterEl.addEventListener('click', () => {
+                // Apply a temporary 'jump' effect
+                characterEl.style.transform = 'translateY(-10px) scale(1.05)';
+                setTimeout(() => {
+                    characterEl.style.transform = 'translateY(0) scale(1)';
+                }, 100);
+            });
+
+
+            // Watch ad button
+            watchAdBtn.addEventListener('click', handleWatchAd);
+            
+            // Join Telegram button
+            joinTelegramBtn.addEventListener('click', handleJoinTelegram);
+            
+            // Withdraw method change
+            withdrawMethodEl.addEventListener('change', handleWithdrawMethodChange);
+            
+            // Withdraw amount change
+            withdrawAmountEl.addEventListener('input', handleWithdrawAmountChange);
+            
+            // Withdraw submit
+            withdrawSubmitBtn.addEventListener('click', handleWithdrawSubmit);
+            
+            // Copy referral link
+            copyRefBtn.addEventListener('click', handleCopyReferralLink);
+        }
+
+        function handleFeedClick() {
+            
+            if (userData.dailyClicks >= 3 && userData.bonusClicks <= 0) return;
+            
+            if (userData.dailyClicks >= 3 && userData.bonusClicks > 0) {
+                userData.bonusClicks--;
+            } else {
+                userData.dailyClicks++;
+            }
+            
+            userData.totalClicks++;
+            userData.balance += CLICK_REWARD;
+            userData.totalEarned += CLICK_REWARD;
+            
+            // Level up check
+            if (userData.totalClicks % 10 === 0 && userData.level < 3) {
+                userData.level++;
+                showNotification(`🌟 Level Up! You reached Level ${userData.level}!`, false);
+            }
+            
+            saveUserData();
+            updateUI();
+            
+            showNotification(`You earned ${CLICK_REWARD} Tk!`);
+        }
+
+        function handleWatchAd() {
+            if (userData.adsWatched >= DAILY_AD_LIMIT) return;
+            
+            showNotification('Watching ad... Please wait 3 seconds.');
+            
+            watchAdBtn.disabled = true; // Disable button while "watching"
+            
+            setTimeout(() => {
+                userData.adsWatched++;
+                userData.balance += AD_REWARD;
+                userData.totalEarned += AD_REWARD;
+                
+                saveUserData();
+                updateUI();
+                
+                showNotification(`💰 You earned ${AD_REWARD} Tk from the ad!`);
+                watchAdBtn.disabled = userData.adsWatched >= DAILY_AD_LIMIT; // Re-enable if limit not reached
+            }, 3000); // Simulated 3-second ad duration
+        }
+
+        function handleJoinTelegram() {
+            if (userData.taskCompleted) return;
+            
+            window.open('http://t.me/rich_boom_bot', '_blank');
+            
+            joinTelegramBtn.disabled = true;
+            joinTelegramBtn.textContent = 'Verifying...';
+            
+            setTimeout(() => {
+                userData.taskCompleted = true;
+                userData.balance += TELEGRAM_REWARD;
+                userData.totalEarned += TELEGRAM_REWARD;
+                
+                saveUserData();
+                updateUI();
+                
+                showNotification(`✅ Telegram Task Complete! You earned ${TELEGRAM_REWARD} Tk bonus!`);
+            }, 5000);
+        }
+
+        function handleWithdrawMethodChange() {
+            const method = withdrawMethodEl.value;
+            
+            if (method === 'binance') {
+                accountNumberGroup.style.display = 'none';
+                binanceUidGroup.style.display = 'block';
+                dollarConversionEl.style.display = 'block';
+            } else {
+                accountNumberGroup.style.display = 'block';
+                binanceUidGroup.style.display = 'none';
+                dollarConversionEl.style.display = 'none';
+            }
+            handleWithdrawAmountChange();
+        }
+
+        function handleWithdrawAmountChange() {
+            const amount = parseFloat(withdrawAmountEl.value) || 0;
+            const rate = 124; 
+            const dollarAmount = (amount / rate).toFixed(2);
+            dollarAmountEl.textContent = dollarAmount;
+            
+            const isBalanceSufficient = amount <= userData.balance;
+            const isAboveMinimum = amount >= MIN_WITHDRAWAL;
+            const hasEnoughReferrals = userData.referrals >= MIN_REFERRALS_FOR_WITHDRAWAL;
+            
+            withdrawSubmitBtn.disabled = !(isBalanceSufficient && isAboveMinimum && hasEnoughReferrals);
+        }
+
+        function handleWithdrawSubmit() {
+            const amount = parseFloat(withdrawAmountEl.value) || 0;
+            
+            if (userData.referrals < MIN_REFERRALS_FOR_WITHDRAWAL) {
+                showNotification(`⛔ Withdrawal failed! You need ${MIN_REFERRALS_FOR_WITHDRAWAL} referrals to withdraw.`, true);
+                return;
+            }
+            
+            if (amount < MIN_WITHDRAWAL) {
+                showNotification(`⛔ Minimum withdrawal is ${MIN_WITHDRAWAL} Tk!`, true);
+                return;
+            }
+            
+            if (amount > userData.balance) {
+                showNotification('⛔ Insufficient balance!', true);
+                return;
+            }
+            
+            userData.balance -= amount;
+            saveUserData();
+            updateUI();
+
+            showNotification(`🚀 Withdrawal Request Accepted! Processing ${amount} Tk.`);
+            
+            withdrawAmountEl.value = '';
+            dollarAmountEl.textContent = '0.00';
+            withdrawSubmitBtn.disabled = true;
+        }
+
+        function handleCopyReferralLink() {
+            const link = referralLinkEl.textContent;
+            navigator.clipboard.writeText(link).then(() => {
+                showNotification('🔗 Referral link copied to clipboard!');
+            }).catch(err => {
+                console.error('Could not copy text: ', err);
+                showNotification('Could not copy link. Try manually.');
+            });
+        }
+
+        // Initialize the app
+        function init() {
+            loadUserData();
+            
+            // OPTIONAL TEST LINE: Uncomment the line below to test the level-up and withdrawal rules
+            // userData.referrals = 10; userData.balance = 2000; userData.level = 3;
+            
+            updateUI();
+            setupEventListeners();
+            handleWithdrawMethodChange();
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
