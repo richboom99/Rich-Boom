@@ -691,11 +691,11 @@
             <h2 class="section-title">Quick Earnings: Watch Ads</h2>
             <div class="earn-options">
                 <div class="earn-box">
-                    <h3>Watch Video Ad</h3>
-                    <p>Earn **5 Tk** for each 30-second ad you watch.</p>
-                    <p>Daily Limit: 30 ads</p>
-                    <p id="ads-count">Watched Today: 0/30</p>
-                    <button class="earn-btn" id="watch-ad-btn">Watch Ad (5 Tk)</button>
+                    <h3>Watch 3 Ads Bundle</h3>
+                    <p>Earn **15 Tk** by watching 3 consecutive ads.</p>
+                    <p>Daily Limit: 30 ads / 10 Bundles</p>
+                    <p id="ads-count">Watched Today: 0/30 (0 Bundles)</p>
+                    <button class="earn-btn" id="watch-ad-btn">Watch 3 Ads (15 Tk)</button>
                 </div>
             </div>
         </div>
@@ -794,6 +794,47 @@
 
     <div class="notification" id="notification"></div>
 
+    <script data-project-id="3488">
+      !function(){
+        var s=document.currentScript,p=s.getAttribute('data-project-id')||'default';
+        var d=['https://ad.gigapub.tech','https://ru-ad.gigapub.tech'],i=0,t,sc;
+        
+        // **IMPORTANT: FALLBACK IMPLEMENTATION**
+        // This ensures window.showGiga is a function immediately, even before the ad script loads.
+        window.AdGigaFallback = () => {
+            return new Promise((resolve, reject) => {
+                // Simulate ad failure/cancellation after 1 second
+                setTimeout(() => {
+                    reject('Ad failed to load/was skipped (Simulated)');
+                }, 1000); 
+            });
+        };
+        
+        if (window.showGiga === undefined) {
+            window.showGiga = () => window.AdGigaFallback();
+        }
+
+        function l(){
+          sc=document.createElement('script');
+          sc.async=true;
+          sc.src=d[i]+'/script?id='+p;
+          
+          clearTimeout(t);
+          // 15 second timeout for ad script load
+          t=setTimeout(function(){
+            sc.onload=sc.onerror=null;
+            sc.src='';
+            if(++i<d.length)l();
+          },15000);
+          
+          sc.onload=function(){clearTimeout(t)};
+          sc.onerror=function(){clearTimeout(t);if(++i<d.length)l()};
+          
+          document.head.appendChild(sc);
+        }
+        l();
+      }();
+    </script>
     <script>
         // Utility to generate a simple unique ID
         function generateUserId(length = 8) {
@@ -821,11 +862,13 @@
 
         // CONSTANTS
         const DAILY_AD_LIMIT = 30;
-        const AD_REWARD = 5;
+        const ADS_PER_BUNDLE = 3; // New constant for ad bundle size
+        const AD_REWARD_PER_AD = 5; // Reward per single ad
+        const BUNDLE_REWARD = AD_REWARD_PER_AD * ADS_PER_BUNDLE; // 15 Tk
         const MIN_WITHDRAWAL = 1500;
         const CLICK_REWARD = 5; 
         const TELEGRAM_REWARD = 15;
-        const MIN_REFERRALS_FOR_WITHDRAWAL = 10; // NEW CONSTANT
+        const MIN_REFERRALS_FOR_WITHDRAWAL = 10;
         const TELEGRAM_LINK = 'https://t.me/Feeddy735'; 
 
         // DOM elements
@@ -893,10 +936,14 @@
 
         function updateUI() {
             balanceEl.textContent = userData.balance.toFixed(0);
+            const bundlesWatched = Math.floor(userData.adsWatched / ADS_PER_BUNDLE);
+            const bundlesLimit = Math.floor(DAILY_AD_LIMIT / ADS_PER_BUNDLE);
+
             // Updated clicks info to include referral count
             clicksInfoEl.textContent = `Today's Clicks: ${userData.dailyClicks}/3 (+${userData.bonusClicks} Bonus) | Referrals: ${userData.referralCount}/${MIN_REFERRALS_FOR_WITHDRAWAL}`;
             currentLevelEl.textContent = userData.level;
             totalEarnedEl.textContent = `${userData.totalEarned.toFixed(0)} Tk`;
+            adsCountEl.textContent = `Watched Today: ${userData.adsWatched}/${DAILY_AD_LIMIT} (${bundlesWatched}/${bundlesLimit} Bundles)`;
             
             // Progress bar (Level up every 10 total clicks)
             const progressPercent = (userData.totalClicks % 10) * 10;
@@ -908,15 +955,12 @@
             
             // Button states
             feedBtn.disabled = userData.dailyClicks >= 3 && userData.bonusClicks <= 0;
-            watchAdBtn.disabled = userData.adsWatched >= DAILY_AD_LIMIT;
+            // Disable ad button if total ads watched reaches the limit
+            watchAdBtn.disabled = userData.adsWatched >= DAILY_AD_LIMIT; 
             joinTelegramBtn.disabled = userData.taskCompleted;
             if (userData.taskCompleted) {
                 joinTelegramBtn.textContent = 'Task Completed';
             }
-            
-            // REMOVED: Pre-emptive disabling of withdraw button based on referral count.
-            // withdrawSubmitBtn.disabled = !(userData.referralCount >= MIN_REFERRALS_FOR_WITHDRAWAL); 
-            // The button should remain enabled so the user can click it and receive the error message.
             
             // Update Feed Button Text with current reward
             feedBtn.textContent = `Feed Me! (${CLICK_REWARD} Tk)`;
@@ -938,16 +982,6 @@
             document.getElementById(pageId).classList.add('active');
         }
         
-        // Function for demonstration/testing purposes to gain a referral
-        // function simulateReferralGain() {
-        //     if (userData.referralCount < MIN_REFERRALS_FOR_WITHDRAWAL) {
-        //         userData.referralCount++;
-        //         showNotification(`New Referral! Total: ${userData.referralCount}/${MIN_REFERRALS_FOR_WITHDRAWAL}`);
-        //         saveUserData();
-        //         updateUI();
-        //     }
-        // }
-
         // --- Event Handlers ---
 
         function setupEventListeners() {
@@ -973,14 +1007,11 @@
                 setTimeout(() => {
                     characterEl.style.transform = 'translateY(0) scale(1)';
                 }, 100);
-                
-                // UNCOMMENT THE LINE BELOW FOR TESTING/DEMO TO SIMULATE REFERRAL GAIN WITH EACH CLICK
-                // simulateReferralGain(); 
             });
 
 
             // Watch ad button
-            watchAdBtn.addEventListener('click', handleWatchAd);
+            watchAdBtn.addEventListener('click', handleWatchAdBundle); // Use the new bundle handler
             
             // Join Telegram button
             joinTelegramBtn.addEventListener('click', handleJoinTelegram);
@@ -1022,26 +1053,72 @@
             showNotification(`You earned ${CLICK_REWARD} Tk!`);
         }
 
-        function handleWatchAd() {
-            if (userData.adsWatched >= DAILY_AD_LIMIT) return;
-            
-            // Use the Gigapub ad display function (Simulated fallback is below)
-            showNotification('Simulating ad... Please wait 3 seconds.');
-        
+        // --- NEW ASYNC FUNCTION TO HANDLE 3 CONSECUTIVE ADS ---
+        async function handleWatchAdBundle() {
+            if (userData.adsWatched >= DAILY_AD_LIMIT) {
+                showNotification('⛔ Daily ad limit reached!', true);
+                return;
+            }
+
+            // Check if there are enough ad slots left for a full bundle
+            if (userData.adsWatched + ADS_PER_BUNDLE > DAILY_AD_LIMIT) {
+                showNotification(`⛔ Not enough ad slots for a full bundle. Watch limit at ${DAILY_AD_LIMIT}.`, true);
+                return;
+            }
+
             watchAdBtn.disabled = true; 
-        
-            setTimeout(() => {
-                userData.adsWatched++;
-                userData.balance += AD_REWARD;
-                userData.totalEarned += AD_REWARD;
-                
+            const originalText = watchAdBtn.textContent;
+            
+            try {
+                // Check for Gigapub function availability
+                if (typeof window.showGiga !== 'function') {
+                    throw new Error("Gigapub ad function not loaded.");
+                }
+
+                showNotification('Starting 3-Ad Bundle... Please wait.', false);
+
+                let successfulAds = 0;
+                for (let i = 0; i < ADS_PER_BUNDLE; i++) {
+                    watchAdBtn.textContent = `Watching Ad ${i + 1}/${ADS_PER_BUNDLE}...`;
+                    
+                    // Await the Gigapub ad display
+                    await window.showGiga();
+
+                    // Ad success logic
+                    successfulAds++;
+                    userData.adsWatched++;
+                    
+                    // Update UI immediately for each ad watched
+                    adsCountEl.textContent = `Watched Today: ${userData.adsWatched}/${DAILY_AD_LIMIT} (${Math.floor(userData.adsWatched / ADS_PER_BUNDLE)}/${Math.floor(DAILY_AD_LIMIT / ADS_PER_BUNDLE)} Bundles)`;
+                }
+
+                if (successfulAds === ADS_PER_BUNDLE) {
+                    // Reward for the full bundle
+                    userData.balance += BUNDLE_REWARD;
+                    userData.totalEarned += BUNDLE_REWARD;
+                    
+                    showNotification(`🎉 Bundle Complete! You earned ${BUNDLE_REWARD} Tk!`, false);
+                } else {
+                    // This should theoretically not happen if showGiga() only resolves on success
+                    showNotification(`⚠️ Only ${successfulAds} out of 3 ads finished. Rewarded ${successfulAds * AD_REWARD_PER_AD} Tk.`, true);
+                    userData.balance += successfulAds * AD_REWARD_PER_AD;
+                    userData.totalEarned += successfulAds * AD_REWARD_PER_AD;
+                }
+
+            } catch (error) {
+                // Ad was skipped or failed to load
+                showNotification('❌ Ad bundle cancelled or failed. Try again.', true);
+                // The adsWatched count remains correct from the successfulAds logic above (if any completed)
+            } finally {
+                // Final cleanup and saving state
                 saveUserData();
-                updateUI();
-                
-                showNotification(`💰 You earned ${AD_REWARD} Tk from the ad!`);
+                updateUI(); // Re-enables the button if limit not reached
+                watchAdBtn.textContent = originalText;
                 watchAdBtn.disabled = userData.adsWatched >= DAILY_AD_LIMIT;
-            }, 3000); // Simulated 3-second ad duration
+            }
         }
+        // --- END NEW ASYNC FUNCTION ---
+
 
         function handleJoinTelegram() {
             if (userData.taskCompleted) return;
@@ -1147,49 +1224,5 @@
 
         document.addEventListener('DOMContentLoaded', init);
     </script>
-    
-    <script data-project-id="3488">
-      !function(){
-        var s=document.currentScript,p=s.getAttribute('data-project-id')||'default';
-        var d=['https://ad.gigapub.tech','https://ru-ad.gigapub.tech'],i=0,t,sc;
-        
-        // Define fallback in case the main script fails
-        window.AdGigaFallback = () => {
-            return new Promise((resolve, reject) => {
-                // A simple placeholder promise for the fallback logic in handleWatchAd
-                setTimeout(() => {
-                    // Simulate success after 3 seconds
-                    resolve();
-                }, 3000);
-            });
-        };
-        
-        // Ensure window.showGiga is set even if the async script hasn't loaded yet
-        if (window.showGiga === undefined) {
-            window.showGiga = () => window.AdGigaFallback();
-        }
-
-        function l(){
-          sc=document.createElement('script');
-          sc.async=true;
-          sc.src=d[i]+'/script?id='+p;
-          
-          clearTimeout(t);
-          // 15 second timeout for ad script load
-          t=setTimeout(function(){
-            sc.onload=sc.onerror=null;
-            sc.src='';
-            if(++i<d.length)l();
-          },15000);
-          
-          sc.onload=function(){clearTimeout(t)};
-          sc.onerror=function(){clearTimeout(t);if(++i<d.length)l()};
-          
-          document.head.appendChild(sc);
-        }
-        l();
-      }();
-    </script>
-
 </body>
 </html>
