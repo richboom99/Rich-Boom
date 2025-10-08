@@ -692,10 +692,10 @@
             <div class="earn-options">
                 <div class="earn-box">
                     <h3>Watch 3 Ads Bundle</h3>
-                    <p>Earn **15 Tk** by watching 3 consecutive ads.</p>
-                    <p>Daily Limit: 30 ads / 10 Bundles</p>
-                    <p id="ads-count">Watched Today: 0/30 (0 Bundles)</p>
-                    <button class="earn-btn" id="watch-ad-btn">Watch 3 Ads (15 Tk)</button>
+                    <p>Earn **5 Tk** by watching 3 consecutive ads per click.</p>
+                    <p>Daily Limit: 60 Clicks | Hourly Limit: 20 Clicks</p>
+                    <p id="ad-click-count">Ad Clicks Today: 0/60 | This Hour: 0/20</p>
+                    <button class="earn-btn" id="watch-ad-btn">Watch Ads (5 Tk)</button>
                 </div>
             </div>
         </div>
@@ -803,9 +803,15 @@
         // This ensures window.showGiga is a function immediately, even before the ad script loads.
         window.AdGigaFallback = () => {
             return new Promise((resolve, reject) => {
-                // Simulate ad failure/cancellation after 1 second
+                // Simulate ad success/failure after 1 second
                 setTimeout(() => {
-                    reject('Ad failed to load/was skipped (Simulated)');
+                    // Simulating an ad success to allow testing the main logic without the external script
+                    // In a real scenario, you'd only call resolve if the ad was truly successful
+                    if (Math.random() > 0.1) { // 90% chance of success for testing
+                         resolve('Ad shown successfully (Simulated)');
+                    } else {
+                         reject('Ad failed to load/was skipped (Simulated)');
+                    }
                 }, 1000); 
             });
         };
@@ -853,20 +859,25 @@
             dailyClicks: 0,
             totalClicks: 0,
             level: 1,
-            adsWatched: 0,
+            adClicksToday: 0, // NEW: Tracks the 60 daily clicks for ads
+            hourlyAdClicks: 0, // NEW: Tracks the 20 hourly clicks for ads
             taskCompleted: false, // For Telegram task
             totalEarned: 0,
             bonusClicks: 0,
-            referralCount: 0, // NEW FIELD: Referral count for withdrawal
+            referralCount: 0, 
+            lastAdClickTime: 0, // NEW: Last timestamp for cooldown
         };
 
-        // CONSTANTS
-        const DAILY_AD_LIMIT = 30;
-        const ADS_PER_BUNDLE = 3; // New constant for ad bundle size
-        const AD_REWARD_PER_AD = 5; // Reward per single ad
-        const BUNDLE_REWARD = AD_REWARD_PER_AD * ADS_PER_BUNDLE; // 15 Tk
+        // CONSTANTS (ADJUSTED PER REQUEST)
+        const DAILY_CLICK_LIMIT = 60; 
+        const CLICKS_PER_HOUR = 20; 
+        const ADS_PER_CLICK = 3; 
+        const AD_CLICK_REWARD = 5; // 5 Tk for 3 ads bundle
+        const AD_CLICK_COOLDOWN_MS = 7000; // 7 seconds
+        
         const MIN_WITHDRAWAL = 1500;
-        const CLICK_REWARD = 5; 
+        const HOME_CLICK_REWARD = 5; // Reward for the feed me button
+        const HOME_DAILY_LIMIT = 3; // Daily base limit for home feed button
         const TELEGRAM_REWARD = 15;
         const MIN_REFERRALS_FOR_WITHDRAWAL = 10;
         const TELEGRAM_LINK = 'https://t.me/Feeddy735'; 
@@ -883,7 +894,7 @@
         const pages = document.querySelectorAll('.page');
         const watchAdBtn = document.getElementById('watch-ad-btn');
         const joinTelegramBtn = document.getElementById('join-telegram-btn');
-        const adsCountEl = document.getElementById('ads-count');
+        const adClickCountEl = document.getElementById('ad-click-count'); // Updated DOM element
         const withdrawMethodEl = document.getElementById('withdraw-method');
         const accountNumberGroup = document.getElementById('account-number-group');
         const binanceUidGroup = document.getElementById('binance-uid-group');
@@ -892,40 +903,59 @@
         const dollarAmountEl = document.getElementById('dollar-amount');
         const withdrawSubmitBtn = document.getElementById('withdraw-submit-btn');
         const notificationEl = document.getElementById('notification');
-        const bonusClicksEl = document.getElementById('bonus-clicks'); 
 
         // --- Core Functions ---
 
         /**
-         * Loads user data from localStorage, handling new day resets.
+         * Loads user data from localStorage, handling new day and new hour resets.
          */
         function loadUserData() {
             const savedData = localStorage.getItem('feedMeUserData');
+            const now = new Date();
+            const today = now.toDateString();
+            const currentHourStart = now.setMinutes(0, 0, 0);
+
             if (savedData) {
                 const loadedData = JSON.parse(savedData);
-                // Manually load only allowed keys to remove old/unwanted data
-                userData.userId = loadedData.userId || generateUserId();
-                userData.balance = loadedData.balance || 0;
-                userData.dailyClicks = loadedData.dailyClicks || 0;
-                userData.totalClicks = loadedData.totalClicks || 0;
-                userData.level = loadedData.level || 1;
-                userData.adsWatched = loadedData.adsWatched || 0;
-                userData.taskCompleted = loadedData.taskCompleted || false;
-                userData.totalEarned = loadedData.totalEarned || 0;
-                userData.bonusClicks = loadedData.bonusClicks || 0;
-                userData.referralCount = loadedData.referralCount || 0; // Load new field
+                
+                // Load saved data
+                Object.assign(userData, {
+                    userId: loadedData.userId || generateUserId(),
+                    balance: loadedData.balance || 0,
+                    dailyClicks: loadedData.dailyClicks || 0,
+                    totalClicks: loadedData.totalClicks || 0,
+                    level: loadedData.level || 1,
+                    adClicksToday: loadedData.adClicksToday || 0, // NEW
+                    hourlyAdClicks: loadedData.hourlyAdClicks || 0, // NEW
+                    taskCompleted: loadedData.taskCompleted || false,
+                    totalEarned: loadedData.totalEarned || 0,
+                    bonusClicks: loadedData.bonusClicks || 0,
+                    referralCount: loadedData.referralCount || 0,
+                    lastAdClickTime: loadedData.lastAdClickTime || 0, // NEW
+                });
+                
 
                 const lastClickDate = localStorage.getItem('lastClickDate');
-                const today = new Date().toDateString();
+                const lastHourStart = localStorage.getItem('lastHourStart');
                 
+                // Daily Reset
                 if (lastClickDate !== today) {
                     userData.dailyClicks = 0;
-                    userData.adsWatched = 0;
+                    userData.adClicksToday = 0;
+                    userData.hourlyAdClicks = 0;
                     localStorage.setItem('lastClickDate', today);
-                    saveUserData();
+                    localStorage.setItem('lastHourStart', currentHourStart); // Reset hour too
+                } 
+                // Hourly Reset
+                else if (lastHourStart && parseInt(lastHourStart) < currentHourStart) {
+                    userData.hourlyAdClicks = 0;
+                    localStorage.setItem('lastHourStart', currentHourStart);
                 }
+
             } else {
-                 // First time load, save the generated userId
+                 // First time load, save the generated userId and initial timestamps
+                localStorage.setItem('lastClickDate', today);
+                localStorage.setItem('lastHourStart', currentHourStart);
                 saveUserData();
             }
         }
@@ -933,17 +963,18 @@
         function saveUserData() {
             localStorage.setItem('feedMeUserData', JSON.stringify(userData));
         }
+        
+        // Timer for cooldown enforcement
+        let adCooldownTimer;
 
         function updateUI() {
+            const now = Date.now();
             balanceEl.textContent = userData.balance.toFixed(0);
-            const bundlesWatched = Math.floor(userData.adsWatched / ADS_PER_BUNDLE);
-            const bundlesLimit = Math.floor(DAILY_AD_LIMIT / ADS_PER_BUNDLE);
 
-            // Updated clicks info to include referral count
-            clicksInfoEl.textContent = `Today's Clicks: ${userData.dailyClicks}/3 (+${userData.bonusClicks} Bonus) | Referrals: ${userData.referralCount}/${MIN_REFERRALS_FOR_WITHDRAWAL}`;
+            // Home Tab Info
+            clicksInfoEl.textContent = `Today's Clicks: ${userData.dailyClicks}/${HOME_DAILY_LIMIT} (+${userData.bonusClicks} Bonus) | Referrals: ${userData.referralCount}/${MIN_REFERRALS_FOR_WITHDRAWAL}`;
             currentLevelEl.textContent = userData.level;
             totalEarnedEl.textContent = `${userData.totalEarned.toFixed(0)} Tk`;
-            adsCountEl.textContent = `Watched Today: ${userData.adsWatched}/${DAILY_AD_LIMIT} (${bundlesWatched}/${bundlesLimit} Bundles)`;
             
             // Progress bar (Level up every 10 total clicks)
             const progressPercent = (userData.totalClicks % 10) * 10;
@@ -953,23 +984,46 @@
             characterEl.className = 'character';
             characterEl.classList.add(`level-${userData.level}`);
             
-            // Button states
-            feedBtn.disabled = userData.dailyClicks >= 3 && userData.bonusClicks <= 0;
-            // Disable ad button if total ads watched reaches the limit
-            watchAdBtn.disabled = userData.adsWatched >= DAILY_AD_LIMIT; 
+            // Home Button state
+            feedBtn.disabled = userData.dailyClicks >= HOME_DAILY_LIMIT && userData.bonusClicks <= 0;
+            feedBtn.textContent = `Feed Me! (${HOME_CLICK_REWARD} Tk)`;
+            
+            // Earn Tab Info & Button state
+            adClickCountEl.textContent = `Ad Clicks Today: ${userData.adClicksToday}/${DAILY_CLICK_LIMIT} | This Hour: ${userData.hourlyAdClicks}/${CLICKS_PER_HOUR}`;
+            
+            const isDailyLimit = userData.adClicksToday >= DAILY_CLICK_LIMIT;
+            const isHourlyLimit = userData.hourlyAdClicks >= CLICKS_PER_HOUR;
+            const isCooldown = now - userData.lastAdClickTime < AD_CLICK_COOLDOWN_MS;
+            
+            watchAdBtn.disabled = isDailyLimit || isHourlyLimit || isCooldown;
+
+            if (isDailyLimit) {
+                 watchAdBtn.textContent = 'Daily Limit Reached';
+            } else if (isHourlyLimit) {
+                 watchAdBtn.textContent = 'Hourly Limit Reached';
+            } else if (isCooldown) {
+                 const timeLeft = Math.ceil((AD_CLICK_COOLDOWN_MS - (now - userData.lastAdClickTime)) / 1000);
+                 watchAdBtn.textContent = `Cooldown (${timeLeft}s)`;
+                 
+                 // Restart the timer to update the button when cooldown ends
+                 clearTimeout(adCooldownTimer);
+                 adCooldownTimer = setTimeout(updateUI, timeLeft * 1000 + 100);
+            } else {
+                 watchAdBtn.textContent = `Watch Ads (${AD_CLICK_REWARD} Tk)`;
+            }
+            
+            // Task Button state
             joinTelegramBtn.disabled = userData.taskCompleted;
             if (userData.taskCompleted) {
                 joinTelegramBtn.textContent = 'Task Completed';
             }
-            
-            // Update Feed Button Text with current reward
-            feedBtn.textContent = `Feed Me! (${CLICK_REWARD} Tk)`;
         }
 
         function showNotification(message, isError = false) {
             notificationEl.textContent = message;
             notificationEl.style.backgroundColor = isError ? '#F44336' : '#4CAF50';
             notificationEl.style.display = 'block';
+            notificationEl.style.animation = 'slideIn 0.5s ease, fadeOut 0.5s ease 2.5s forwards';
             setTimeout(() => {
                 notificationEl.style.display = 'none';
             }, 3000);
@@ -1011,7 +1065,7 @@
 
 
             // Watch ad button
-            watchAdBtn.addEventListener('click', handleWatchAdBundle); // Use the new bundle handler
+            watchAdBtn.addEventListener('click', handleWatchAdClick); // Use the new ad click handler
             
             // Join Telegram button
             joinTelegramBtn.addEventListener('click', handleJoinTelegram);
@@ -1028,7 +1082,7 @@
 
         function handleFeedClick() {
             
-            if (userData.dailyClicks >= 3 && userData.bonusClicks <= 0) return;
+            if (userData.dailyClicks >= HOME_DAILY_LIMIT && userData.bonusClicks <= 0) return;
             
             // Prioritize bonus clicks
             if (userData.bonusClicks > 0) {
@@ -1038,8 +1092,8 @@
             }
             
             userData.totalClicks++;
-            userData.balance += CLICK_REWARD;
-            userData.totalEarned += CLICK_REWARD;
+            userData.balance += HOME_CLICK_REWARD;
+            userData.totalEarned += HOME_CLICK_REWARD;
             
             // Level up check
             if (userData.totalClicks % 10 === 0 && userData.level < 3) {
@@ -1050,19 +1104,25 @@
             saveUserData();
             updateUI();
             
-            showNotification(`You earned ${CLICK_REWARD} Tk!`);
+            showNotification(`You earned ${HOME_CLICK_REWARD} Tk!`);
         }
 
-        // --- NEW ASYNC FUNCTION TO HANDLE 3 CONSECUTIVE ADS ---
-        async function handleWatchAdBundle() {
-            if (userData.adsWatched >= DAILY_AD_LIMIT) {
-                showNotification('⛔ Daily ad limit reached!', true);
+        // --- NEW ASYNC FUNCTION TO HANDLE 3 ADS PER CLICK ---
+        async function handleWatchAdClick() {
+            const now = Date.now();
+            
+            if (userData.adClicksToday >= DAILY_CLICK_LIMIT) {
+                showNotification('⛔ Daily ad click limit (60) reached!', true);
                 return;
             }
-
-            // Check if there are enough ad slots left for a full bundle
-            if (userData.adsWatched + ADS_PER_BUNDLE > DAILY_AD_LIMIT) {
-                showNotification(`⛔ Not enough ad slots for a full bundle. Watch limit at ${DAILY_AD_LIMIT}.`, true);
+            if (userData.hourlyAdClicks >= CLICKS_PER_HOUR) {
+                showNotification('⛔ Hourly ad click limit (20) reached! Try again next hour.', true);
+                return;
+            }
+            if (now - userData.lastAdClickTime < AD_CLICK_COOLDOWN_MS) {
+                 // Should be caught by the button disable state, but good for a double check
+                const timeLeft = Math.ceil((AD_CLICK_COOLDOWN_MS - (now - userData.lastAdClickTime)) / 1000);
+                showNotification(`⛔ Please wait ${timeLeft} seconds before clicking again.`, true);
                 return;
             }
 
@@ -1070,51 +1130,48 @@
             const originalText = watchAdBtn.textContent;
             
             try {
-                // Check for Gigapub function availability
                 if (typeof window.showGiga !== 'function') {
                     throw new Error("Gigapub ad function not loaded.");
                 }
 
-                showNotification('Starting 3-Ad Bundle... Please wait.', false);
+                showNotification(`Starting 3 Ads Bundle (Reward: ${AD_CLICK_REWARD} Tk)...`, false);
 
                 let successfulAds = 0;
-                for (let i = 0; i < ADS_PER_BUNDLE; i++) {
-                    watchAdBtn.textContent = `Watching Ad ${i + 1}/${ADS_PER_BUNDLE}...`;
+                for (let i = 0; i < ADS_PER_CLICK; i++) {
+                    watchAdBtn.textContent = `Watching Ad ${i + 1}/${ADS_PER_CLICK}...`;
                     
                     // Await the Gigapub ad display
                     await window.showGiga();
 
                     // Ad success logic
                     successfulAds++;
-                    userData.adsWatched++;
-                    
-                    // Update UI immediately for each ad watched
-                    adsCountEl.textContent = `Watched Today: ${userData.adsWatched}/${DAILY_AD_LIMIT} (${Math.floor(userData.adsWatched / ADS_PER_BUNDLE)}/${Math.floor(DAILY_AD_LIMIT / ADS_PER_BUNDLE)} Bundles)`;
                 }
 
-                if (successfulAds === ADS_PER_BUNDLE) {
+                if (successfulAds === ADS_PER_CLICK) {
                     // Reward for the full bundle
-                    userData.balance += BUNDLE_REWARD;
-                    userData.totalEarned += BUNDLE_REWARD;
+                    userData.balance += AD_CLICK_REWARD;
+                    userData.totalEarned += AD_CLICK_REWARD;
                     
-                    showNotification(`🎉 Bundle Complete! You earned ${BUNDLE_REWARD} Tk!`, false);
+                    // Increment click counters only on successful bundle completion
+                    userData.adClicksToday++;
+                    userData.hourlyAdClicks++;
+                    userData.lastAdClickTime = Date.now();
+                    
+                    showNotification(`🎉 3 Ads Complete! You earned ${AD_CLICK_REWARD} Tk!`, false);
                 } else {
-                    // This should theoretically not happen if showGiga() only resolves on success
-                    showNotification(`⚠️ Only ${successfulAds} out of 3 ads finished. Rewarded ${successfulAds * AD_REWARD_PER_AD} Tk.`, true);
-                    userData.balance += successfulAds * AD_REWARD_PER_AD;
-                    userData.totalEarned += successfulAds * AD_REWARD_PER_AD;
+                    // Ad failed/was skipped in the middle
+                    showNotification(`⚠️ Ad bundle failed after ${successfulAds} ads. No reward given.`, true);
+                    // Do NOT increment click counters as the full bundle failed
                 }
 
             } catch (error) {
-                // Ad was skipped or failed to load
-                showNotification('❌ Ad bundle cancelled or failed. Try again.', true);
-                // The adsWatched count remains correct from the successfulAds logic above (if any completed)
+                // Ad was skipped or failed to load on the first attempt
+                showNotification('❌ Ad click failed. Try again.', true);
             } finally {
                 // Final cleanup and saving state
                 saveUserData();
-                updateUI(); // Re-enables the button if limit not reached
-                watchAdBtn.textContent = originalText;
-                watchAdBtn.disabled = userData.adsWatched >= DAILY_AD_LIMIT;
+                updateUI(); 
+                // The updateUI call handles resetting the button text and disabling it for the cooldown/limits
             }
         }
         // --- END NEW ASYNC FUNCTION ---
@@ -1162,8 +1219,6 @@
             const rate = 124; 
             const dollarAmount = (amount / rate).toFixed(2);
             dollarAmountEl.textContent = dollarAmount;
-            
-            // This function only controls the dollar conversion display.
         }
 
         function handleWithdrawSubmit() {
@@ -1172,7 +1227,7 @@
             const binanceUid = document.getElementById('binance-uid').value.trim();
             const method = withdrawMethodEl.value;
 
-            // 1. Check for Minimum Balance (Requested Check - Display in Bengali)
+            // 1. Check for Minimum Balance (Requested Check in Bengali)
             if (userData.balance < MIN_WITHDRAWAL) {
                 showNotification('⛔ আপনার ব্যালেন্স এখনো 1500 টাকা হয়নি।', true);
                 return;
@@ -1211,7 +1266,6 @@
             
             withdrawAmountEl.value = '';
             dollarAmountEl.textContent = '0.00';
-            // No need to disable the button permanently, only for the duration of a successful transaction if it were async.
         }
 
         // Initialize the app
