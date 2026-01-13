@@ -45,6 +45,8 @@
             --success: #28A745;
             --warning: #FFC107;
             --ton-blue: #0088CC;
+            --bkash: #E2136E;
+            --nagad: #F7941D;
         }
 
         body {
@@ -214,15 +216,24 @@
         }
 
         .withdraw-info {
-            background: #FFF3CD; color: #856404; padding: 15px;
+            background: #e8f4fd; color: #0088CC; padding: 15px;
             border-radius: 10px; margin-bottom: 20px; font-size: 14px;
+            border-left: 5px solid var(--ton-blue);
         }
 
         .input-group { margin-bottom: 20px; text-align: left; }
         .input-group label { display: block; margin-bottom: 8px; font-weight: 600; }
-        .input-group input {
+        .input-group input, .input-group select {
             width: 100%; padding: 12px; border-radius: 10px;
             border: 1px solid #ddd; font-size: 16px;
+            outline: none;
+        }
+
+        .conversion-rate {
+            margin-top: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            color: var(--success);
         }
     </style>
 </head>
@@ -301,17 +312,28 @@
             <h2>Withdraw Funds</h2>
             <div class="withdraw-info">
                 <i class="fas fa-info-circle"></i> Minimum Withdraw: <b>10 USDT</b><br>
+                <i class="fas fa-exchange-alt"></i> Rate: <b>1 USDT = 125 BDT</b><br>
                 <i class="fas fa-users"></i> Required Referrals: <b>10 Persons</b>
             </div>
             
             <div class="input-group">
-                <label>Amount (USDT)</label>
-                <input type="number" id="withdrawAmount" placeholder="Min 10 USDT">
+                <label>Select Payment Method</label>
+                <select id="paymentMethod" onchange="updatePlaceholder()">
+                    <option value="ton">TON Wallet (USDT)</option>
+                    <option value="bkash">bKash (Personal)</option>
+                    <option value="nagad">Nagad (Personal)</option>
+                </select>
             </div>
 
             <div class="input-group">
-                <label>TON Address</label>
-                <input type="text" id="tonAddress" placeholder="Enter your TON wallet address">
+                <label>Amount (USDT)</label>
+                <input type="number" id="withdrawAmount" placeholder="Min 10 USDT" oninput="calculateBDT()">
+                <div id="bdtConversion" class="conversion-rate">0.00 BDT</div>
+            </div>
+
+            <div class="input-group">
+                <label id="addressLabel">TON Address</label>
+                <input type="text" id="walletAddress" placeholder="Enter your TON wallet address">
             </div>
 
             <button class="btn-main" onclick="handleWithdraw()">Request Withdraw</button>
@@ -323,6 +345,7 @@
         let balance = parseFloat(localStorage.getItem('cc_balance')) || 0.0;
         let tapsToday = parseInt(localStorage.getItem('cc_taps')) || 0;
         let lastDate = localStorage.getItem('cc_date') || "";
+        const RATE = 125;
 
         // Reset Taps if new day
         const today = new Date().toDateString();
@@ -343,13 +366,42 @@
 
         updateUI();
 
+        // Conversion Logic
+        function calculateBDT() {
+            const amount = document.getElementById('withdrawAmount').value;
+            const bdtDisplay = document.getElementById('bdtConversion');
+            if (amount > 0) {
+                const totalBDT = amount * RATE;
+                bdtDisplay.innerText = totalBDT.toLocaleString() + " BDT";
+            } else {
+                bdtDisplay.innerText = "0.00 BDT";
+            }
+        }
+
+        // Update Placeholder based on Method
+        function updatePlaceholder() {
+            const method = document.getElementById('paymentMethod').value;
+            const label = document.getElementById('addressLabel');
+            const input = document.getElementById('walletAddress');
+
+            if (method === 'ton') {
+                label.innerText = "TON Address";
+                input.placeholder = "Enter your TON wallet address";
+            } else if (method === 'bkash') {
+                label.innerText = "bKash Number";
+                input.placeholder = "Enter 11-digit bKash Number";
+            } else {
+                label.innerText = "Nagad Number";
+                input.placeholder = "Enter 11-digit Nagad Number";
+            }
+        }
+
         // Page Navigation
         function showPage(pageId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
             
-            // Highlight the clicked tab
             const tabs = document.querySelectorAll('.tab');
             tabs.forEach(tab => {
                 if(tab.innerText.toLowerCase().includes(pageId)) {
@@ -358,18 +410,16 @@
             });
         }
 
-        // --- Gigapub Ad Logic ---
+        // Ad Logic
         document.getElementById('tapButton').addEventListener('click', () => {
             if (tapsToday >= 100) {
                 alert("Daily limit reached! Come back tomorrow.");
                 return;
             }
 
-            // Check if showGiga exists (SDK Loaded)
             if (typeof window.showGiga !== 'undefined') {
                 window.showGiga()
                     .then(() => {
-                        // Reward user after successful ad
                         balance += 0.02;
                         tapsToday += 1;
                         updateUI();
@@ -385,19 +435,24 @@
 
         // Withdraw Logic
         function handleWithdraw() {
-            const amount = document.getElementById('withdrawAmount').value;
-            const address = document.getElementById('tonAddress').value;
+            const amount = parseFloat(document.getElementById('withdrawAmount').value);
+            const address = document.getElementById('walletAddress').value;
+            const method = document.getElementById('paymentMethod').value;
 
-            if (amount < 10) {
+            if (isNaN(amount) || amount < 10) {
                 alert("Minimum withdrawal is 10 USDT");
                 return;
             }
+            if (amount > balance) {
+                alert("Insufficient Balance!");
+                return;
+            }
             if (address.length < 5) {
-                alert("Please enter a valid TON address");
+                alert("Please enter a valid Account/Address");
                 return;
             }
             
-            alert("To withdraw, you must have at least 10 referrals. Currently, you don't meet the requirement.");
+            alert(`Withdraw Request Received!\nMethod: ${method.toUpperCase()}\nAmount: ${amount} USDT (${amount * RATE} BDT)\nStatus: Pending (Need 10 Referrals)`);
         }
 
         // Hide Loading Screen
